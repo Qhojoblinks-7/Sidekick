@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Sidekick",
+    "slug": "sidekick",
+    "scheme": "sidekick",
+    "package": "com.sidekick.deliverytracker",
+    "splash": {
+      "backgroundColor": "#000000",
+      "resizeMode": "contain"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6f31909f-949b-4db0-a5e6-05facf042e17"
+      }
+    },
+    "android": {
+      "package": "com.sidekick.deliverytracker"
+    }
+  }
+}

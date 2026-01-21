@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=sidekick_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=dansoman_secure
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgres://admin:dansoman_secure@db:5432/sidekick_db
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
