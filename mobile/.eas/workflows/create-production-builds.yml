@@ -6,8 +6,10 @@ jobs:
     params:
       platform: android
       ref: master
+      projectRoot: mobile
   build_ios:
     type: build # This job type creates a production build for iOS
     params:
       platform: ios
       ref: master
+      projectRoot: mobile
