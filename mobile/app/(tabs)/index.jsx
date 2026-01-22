@@ -65,7 +65,7 @@ export default function Dashboard() {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.black,
+      backgroundColor: colors.background,
     },
     cardsScroll: {
       maxHeight: 300,
@@ -137,7 +137,7 @@ export default function Dashboard() {
       padding: 16,
       fontSize: 24,
       color: colors.textMain,
-      backgroundColor: colors.black,
+      backgroundColor: colors.card,
       marginBottom: 20,
       textAlign: "center",
     },

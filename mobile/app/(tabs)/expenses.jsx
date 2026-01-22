@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import { API_BASE_URL } from '../../constants/API';
+import { apiCall } from '../../services/apiService';
 import { useSelector, useDispatch } from 'react-redux';
 import { addExpense, setSummary } from '../../store/store';
 
@@ -36,11 +37,8 @@ export default function Expenses() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/expenses/`, {
+      const response = await apiCall('/api/expenses/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           amount: parseFloat(amount),
           category: categoryMap[category],
@@ -86,7 +84,7 @@ export default function Expenses() {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.black,
+      backgroundColor: colors.background,
     },
     header: {
       paddingHorizontal: 16,
@@ -209,7 +207,7 @@ export default function Expenses() {
       padding: 16,
       fontSize: 24,
       color: colors.textMain,
-      backgroundColor: colors.black,
+      backgroundColor: colors.card,
       marginBottom: 20,
       textAlign: 'center',
     },

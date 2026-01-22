@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: sidekick-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "false"
+      - key: ALLOWED_HOSTS
+        value: "sidekick-backend.onrender.com"
+      - key: DATABASE_URL
+        value: "postgresql://user:pass@host:5432/db"  # Replace with actual
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://yourfrontend.onrender.com"
+    healthCheckPath: /api/health/

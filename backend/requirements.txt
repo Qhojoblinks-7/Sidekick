@@ -1,6 +1,10 @@
 django>=5.0
 djangorestframework
+djangorestframework-simplejwt
 django-cors-headers
 psycopg2-binary
 gunicorn
 python-dotenv
+argon2-cffi
+dj-database-url
+whitenoise

@@ -1,0 +1,230 @@
+import React, { useState, useContext } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  Image,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { Formik, useFormik } from "formik";
+import * as Yup from "yup";
+import * as SecureStore from "expo-secure-store";
+import { AuthContext } from "../contexts/AuthContext";
+import { ThemeContext } from "../contexts/ThemeContext";
+import { useToast } from "../contexts/ToastContext";
+
+const validationSchema = Yup.object({
+  email: Yup.string().email('Invalid email').required('Email is required'),
+  password: Yup.string().min(8, 'Password must be at least 8 characters').required('Password is required'),
+  confirmPassword: Yup.string().when('isRegistering', {
+    is: true,
+    then: Yup.string().oneOf([Yup.ref('password'), null], 'Passwords must match').required('Confirm password is required'),
+  }),
+});
+
+export default function Login() {
+  const [loading, setLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const { setIsAuthenticated, setUser } = useContext(AuthContext);
+  const { colors } = useContext(ThemeContext);
+  const router = useRouter();
+  const { showToast } = useToast();
+
+  const formik = useFormik({
+    initialValues: {
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+    validationSchema,
+    onSubmit: async (values) => {
+      setLoading(true);
+      try {
+        const endpoint = isRegistering ? '/api/auth/register/' : '/api/auth/login/';
+        const body = isRegistering
+          ? {
+              email: values.email,
+              username: values.email,
+              password: values.password,
+              password2: values.confirmPassword,
+            }
+          : { username: values.email, password: values.password };
+
+        const response = await fetch(
+          `${process.env.EXPO_PUBLIC_API_URL}${endpoint}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          },
+        );
+
+        const data = await response.json();
+        if (response.ok) {
+          if (isRegistering) {
+            showToast("Account created! Please log in.", "success");
+            setIsRegistering(false);
+            formik.resetForm();
+          } else {
+            await SecureStore.setItemAsync("accessToken", data.access);
+            await SecureStore.setItemAsync("refreshToken", data.refresh);
+            setIsAuthenticated(true);
+            setUser({ email: values.email, username: values.email });
+            showToast("Login successful!", "success");
+            router.replace('/(tabs)');
+          }
+        } else {
+          showToast(data.detail || "Invalid credentials", "error");
+        }
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+      setLoading(false);
+    },
+  });
+
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 24, justifyContent: 'center' }}>
+      <View style={{ alignItems: 'center', marginBottom: 40 }}>
+        <View
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 16,
+          }}
+        >
+          <Image 
+                  source={require('../assets/brand-icon.png')} 
+                  style={{ width: 120, height: 120 }}
+                  resizeMode="contain"
+                />
+        </View>
+        <Text style={{ color: colors.textMain, fontSize: 32, fontWeight: '900', fontStyle: 'italic' }}>
+          SIDEKICK
+        </Text>
+        <Text style={{ color: colors.textMuted }}>Driver Security Portal</Text>
+      </View>
+
+      <View style={{ gap: 16 }}>
+        <TextInput
+          placeholder="Driver Email"
+          placeholderTextColor={colors.textMuted}
+          style={{
+            backgroundColor: colors.card,
+            borderColor: formik.errors.email && formik.touched.email ? colors.expense : colors.border,
+            borderWidth: 1,
+            padding: 16,
+            borderRadius: 12,
+            color: colors.textMain,
+          }}
+          value={formik.values.email}
+          onChangeText={formik.handleChange('email')}
+          onBlur={formik.handleBlur('email')}
+          keyboardType="email-address"
+          editable={!loading}
+        />
+        {formik.errors.email && formik.touched.email && (
+          <Text style={{ color: colors.expense, fontSize: 12, marginTop: 4 }}>
+            {formik.errors.email}
+          </Text>
+        )}
+        <TextInput
+          placeholder="Security Password"
+          placeholderTextColor={colors.textMuted}
+          secureTextEntry
+          style={{
+            backgroundColor: colors.card,
+            borderColor: formik.errors.password && formik.touched.password ? colors.expense : colors.border,
+            borderWidth: 1,
+            padding: 16,
+            borderRadius: 12,
+            color: colors.textMain,
+          }}
+          value={formik.values.password}
+          onChangeText={formik.handleChange('password')}
+          onBlur={formik.handleBlur('password')}
+          editable={!loading}
+        />
+        {formik.errors.password && formik.touched.password && (
+          <Text style={{ color: colors.expense, fontSize: 12, marginTop: 4 }}>
+            {formik.errors.password}
+          </Text>
+        )}
+
+        {isRegistering && (
+          <>
+            <TextInput
+              placeholder="Confirm Password"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+              style={{
+                backgroundColor: colors.card,
+                borderColor: formik.errors.confirmPassword && formik.touched.confirmPassword ? colors.expense : colors.border,
+                borderWidth: 1,
+                padding: 16,
+                borderRadius: 12,
+                color: colors.textMain,
+              }}
+              value={formik.values.confirmPassword}
+              onChangeText={formik.handleChange('confirmPassword')}
+              onBlur={formik.handleBlur('confirmPassword')}
+              editable={!loading}
+            />
+            {formik.errors.confirmPassword && formik.touched.confirmPassword && (
+              <Text style={{ color: colors.expense, fontSize: 12, marginTop: 4 }}>
+                {formik.errors.confirmPassword}
+              </Text>
+            )}
+          </>
+        )}
+
+        <TouchableOpacity
+          onPress={formik.handleSubmit}
+          disabled={loading}
+          style={{
+            backgroundColor: colors.profit,
+            padding: 16,
+            borderRadius: 12,
+            alignItems: 'center',
+            flexDirection: 'row',
+            justifyContent: 'center',
+          }}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.background} />
+          ) : (
+            <>
+              <Text style={{ fontWeight: 'bold', marginRight: 8, color: colors.background }}>
+                {isRegistering ? "CREATE ACCOUNT" : "SECURE SIGN IN"}
+              </Text>
+              <Ionicons name="arrow-forward" size={18} color={colors.background} />
+            </>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => {
+            setIsRegistering(!isRegistering);
+            formik.resetForm();
+          }}
+          disabled={loading}
+        >
+          <Text style={{ textAlign: 'center', color: colors.textMuted }}>
+            {isRegistering
+              ? "Already have an account? Sign In"
+              : "Don't have an account? Register"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+

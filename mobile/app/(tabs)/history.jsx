@@ -19,7 +19,8 @@ export default function History() {
   const { colors } = useContext(ThemeContext);
   const { transactions: transactionsData, expenses: expensesData } =
     useSelector((state) => state.data);
-  const { mutate: updateTransaction, isPending: isUpdating } = useUpdateTransaction();
+  const { mutate: updateTransaction, isPending: isUpdating } =
+    useUpdateTransaction();
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -97,7 +98,7 @@ export default function History() {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.black,
+      backgroundColor: colors.background,
     },
     header: {
       paddingHorizontal: 16,
@@ -175,7 +176,7 @@ export default function History() {
       fontWeight: "bold",
     },
     filterButtonTextActive: {
-      color: colors.black,
+      color: colors.textMain,
     },
     modalOverlay: {
       flex: 1,
@@ -214,7 +215,7 @@ export default function History() {
       padding: 16,
       fontSize: 24,
       color: colors.textMain,
-      backgroundColor: colors.black,
+      backgroundColor: colors.card,
       marginBottom: 20,
       textAlign: "center",
     },
@@ -301,9 +302,9 @@ export default function History() {
             type={item.type}
             status={item.status}
             onPress={() => {
-              if (item.type === 'expense') return; // Don't edit expenses
+              if (item.type === "expense") return; // Don't edit expenses
               setSelectedTransaction(item);
-              setDeliveryFee('');
+              setDeliveryFee("");
               setEditModalVisible(true);
             }}
           />
@@ -327,14 +328,16 @@ export default function History() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Transaction</Text>
 
-            <Text style={styles.inputLabel}>Received Amount: GH₵{selectedTransaction?.amount}</Text>
+            <Text style={styles.inputLabel}>
+              Received Amount: GH₵{selectedTransaction?.amount}
+            </Text>
 
             <TouchableOpacity
               style={[styles.modalButton, styles.saveButton]}
               onPress={() => {
                 updateTransaction(
                   {
-                    id: selectedTransaction.id.replace('tx-', ''),
+                    id: selectedTransaction.id.replace("tx-", ""),
                     updatedTx: {
                       rider_profit: parseFloat(selectedTransaction.amount),
                       platform_debt: 0,
@@ -343,7 +346,7 @@ export default function History() {
                   {
                     onSuccess: () => {
                       setEditModalVisible(false);
-                      Alert.alert('Success', 'Marked as tip!');
+                      Alert.alert("Success", "Marked as tip!");
                     },
                   },
                 );
@@ -351,7 +354,7 @@ export default function History() {
               disabled={isUpdating}
             >
               <Text style={styles.saveButtonText}>
-                {isUpdating ? 'Updating...' : 'Mark as Tip'}
+                {isUpdating ? "Updating..." : "Mark as Tip"}
               </Text>
             </TouchableOpacity>
 
@@ -376,23 +379,31 @@ export default function History() {
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={() => {
                   const fee = parseFloat(deliveryFee);
-                  if (isNaN(fee) || fee < 0 || fee > parseFloat(selectedTransaction.amount)) {
-                    Alert.alert('Invalid Fee', 'Please enter a valid delivery fee.');
+                  if (
+                    isNaN(fee) ||
+                    fee < 0 ||
+                    fee > parseFloat(selectedTransaction.amount)
+                  ) {
+                    Alert.alert(
+                      "Invalid Fee",
+                      "Please enter a valid delivery fee.",
+                    );
                     return;
                   }
                   updateTransaction(
                     {
-                      id: selectedTransaction.id.replace('tx-', ''),
+                      id: selectedTransaction.id.replace("tx-", ""),
                       updatedTx: {
-                        rider_profit: parseFloat(selectedTransaction.amount) - fee,
+                        rider_profit:
+                          parseFloat(selectedTransaction.amount) - fee,
                         platform_debt: fee,
                       },
                     },
                     {
                       onSuccess: () => {
                         setEditModalVisible(false);
-                        setDeliveryFee('');
-                        Alert.alert('Success', 'Delivery fee updated!');
+                        setDeliveryFee("");
+                        Alert.alert("Success", "Delivery fee updated!");
                       },
                     },
                   );
@@ -400,7 +411,7 @@ export default function History() {
                 disabled={isUpdating}
               >
                 <Text style={styles.saveButtonText}>
-                  {isUpdating ? 'Updating...' : 'Update Fee'}
+                  {isUpdating ? "Updating..." : "Update Fee"}
                 </Text>
               </TouchableOpacity>
             </View>

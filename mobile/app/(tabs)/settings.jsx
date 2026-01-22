@@ -13,8 +13,9 @@ import {
 import { Button } from "../../components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeContext } from "../../contexts/ThemeContext";
-import { API_BASE_URL } from "../../constants/API";
+import { apiCall } from "../../services/apiService";
 import { useSelector, useDispatch } from "react-redux";
+import { useRouter } from "expo-router";
 import {
   setOnline,
   setSyncing,
@@ -26,10 +27,13 @@ import {
   setExpenses,
   updatePlatformDebt,
 } from "../../store/store";
+import { useAuth } from "../../hooks/useAuth";
 
 export default function Settings() {
   const { colors } = useContext(ThemeContext);
   const dispatch = useDispatch();
+  const router = useRouter();
+  const { logout, user } = useAuth();
   const { isOnline, isSyncing, lastSyncTime } = useSelector(
     (state) => state.ui,
   );
@@ -70,13 +74,32 @@ export default function Settings() {
     setAlertModalVisible(true);
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        { text: "Cancel", onPress: () => {}, style: "cancel" },
+        {
+          text: "Logout",
+          onPress: async () => {
+            await logout();
+            router.replace("/auth");
+          },
+          style: "destructive",
+        },
+      ],
+      { cancelable: false },
+    );
+  };
+
   useEffect(() => {
     checkBackendConnection();
   }, []);
 
   const checkBackendConnection = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/daily-summary/`);
+      const response = await apiCall("/api/summary/daily/");
       dispatch(setOnline(response.ok));
     } catch (error) {
       dispatch(setOnline(false));
@@ -96,9 +119,9 @@ export default function Settings() {
       const fetchOptions = { signal: controller.signal };
 
       const [summaryRes, transactionsRes, expensesRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/daily-summary/`, fetchOptions),
-        fetch(`${API_BASE_URL}/transactions/`, fetchOptions),
-        fetch(`${API_BASE_URL}/expenses/`, fetchOptions),
+        apiCall("/api/summary/daily/"),
+        apiCall("/api/transactions/"),
+        apiCall("/api/expenses/"),
       ]);
 
       if (!summaryRes.ok || !transactionsRes.ok || !expensesRes.ok) {
@@ -178,17 +201,7 @@ export default function Settings() {
   };
 
   const handleSignOut = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: () => {
-          // In a real app, this would clear authentication tokens
-          Alert.alert("Signed Out", "You have been signed out successfully.");
-        },
-      },
-    ]);
+    handleLogout();
   };
 
   const SettingOption = ({ icon, label, value, onPress, isSyncing }) => (
@@ -238,7 +251,7 @@ export default function Settings() {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.black,
+      backgroundColor: colors.background,
     },
     scroll: {
       height: 600,
@@ -354,7 +367,7 @@ export default function Settings() {
       padding: 16,
       fontSize: 18,
       color: colors.textMain,
-      backgroundColor: colors.black,
+      backgroundColor: colors.card,
       marginBottom: 20,
     },
     modalButtons: {
@@ -393,7 +406,7 @@ export default function Settings() {
       borderWidth: 1,
       borderColor: colors.border,
       marginBottom: 12,
-      backgroundColor: colors.black,
+      backgroundColor: colors.card,
     },
     selectedVehicle: {
       borderColor: colors.profit,
@@ -446,7 +459,6 @@ export default function Settings() {
       </View>
 
       <ScrollView style={styles.scroll}>
-
         {/* Profile Section */}
         <Text style={styles.sectionTitle}>Profile</Text>
         <View style={styles.profileContainer}>

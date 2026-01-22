@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { API_BASE_URL } from '../constants/API';
+import { apiCall } from '../services/apiService';
 import { setSummary, setTransactions, setExpenses } from '../store/store';
 
 const useDashboardData = () => {
@@ -10,9 +10,9 @@ const useDashboardData = () => {
     const loadData = async () => {
       try {
         const [summaryRes, transactionsRes, expensesRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/daily-summary/`),
-          fetch(`${API_BASE_URL}/transactions/`),
-          fetch(`${API_BASE_URL}/expenses/`)
+          apiCall('/api/summary/daily/'),
+          apiCall('/api/transactions/'),
+          apiCall('/api/expenses/')
         ]);
 
         if (summaryRes.ok) {

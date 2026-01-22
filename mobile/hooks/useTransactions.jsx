@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '../constants/API';
+import { apiCall } from '../services/apiService';
 
 export const useAddTransaction = () => {
   const queryClient = useQueryClient();
@@ -7,9 +7,8 @@ export const useAddTransaction = () => {
   return useMutation({
     mutationFn: async (newTx) => {
       try {
-        const response = await fetch(`${API_BASE_URL}/transactions/`, {
+        const response = await apiCall('/api/transactions/', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newTx),
         });
         if (!response.ok) {
@@ -37,9 +36,8 @@ export const useUpdateTransaction = () => {
   return useMutation({
     mutationFn: async ({ id, updatedTx }) => {
       try {
-        const response = await fetch(`${API_BASE_URL}/transactions/${id}/`, {
+        const response = await apiCall(`/api/transactions/${id}/`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updatedTx),
         });
         if (!response.ok) {
