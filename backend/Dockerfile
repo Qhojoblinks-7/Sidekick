@@ -23,11 +23,11 @@ COPY . .
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Run migrations
-RUN python manage.py migrate --noinput
-
 # Expose the port
 EXPOSE 8000
 
-# Run the application with Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]
+# Make start.sh executable
+RUN chmod +x start.sh
+
+# Run the application with start.sh
+CMD ["./start.sh"]
