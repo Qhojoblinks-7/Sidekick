@@ -14,11 +14,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
         # Allow login with email as username
         if 'username' in request.data and '@' in request.data['username']:
-            try:
-                user = User.objects.get(email=request.data['username'])
+            user = User.objects.filter(email=request.data['username']).first()
+            if user:
                 request.data['username'] = user.username
-            except User.DoesNotExist:
-                pass
         return super().post(request, *args, **kwargs)
 
 class RegisterDriverView(APIView):

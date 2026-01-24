@@ -54,6 +54,10 @@ export default function Login() {
             }
           : { username: values.email, password: values.password };
 
+        console.log('API URL:', process.env.EXPO_PUBLIC_API_URL);
+        console.log('Endpoint:', endpoint);
+        console.log('Request body:', body);
+
         const response = await fetch(
           `${process.env.EXPO_PUBLIC_API_URL}${endpoint}`,
           {
@@ -63,7 +67,11 @@ export default function Login() {
           },
         );
 
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+
         const data = await response.json();
+        console.log('Response data:', data);
         if (response.ok) {
           if (isRegistering) {
             showToast("Account created! Please log in.", "success");
@@ -78,11 +86,13 @@ export default function Login() {
             router.replace('/(tabs)');
           }
         } else {
-          showToast(data.detail || "Invalid credentials", "error");
-        }
-      } catch (error) {
-        showToast(error.message, "error");
-      }
+           const errorMessage = isRegistering ? (data.error || "Registration failed") : (data.detail || "Invalid credentials");
+           showToast(errorMessage, "error");
+         }
+       } catch (error) {
+         console.log('Fetch error:', error);
+         showToast(error.message, "error");
+       }
       setLoading(false);
     },
   });
