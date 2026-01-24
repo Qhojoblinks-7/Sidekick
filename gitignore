@@ -80,6 +80,7 @@ build/
 out/
 .pnp.*
 .cache/
+.expo/
 
 # Python
 venv/

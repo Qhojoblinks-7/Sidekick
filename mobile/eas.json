@@ -14,7 +14,7 @@
       },
       "distribution": "internal",
       "env": {
-        "API_BASE_URL": "http://10.177.119.107:8000"
+        "EXPO_PUBLIC_API_URL": "http://10.177.119.107:8000/api"
       }
     },
     "production": {
@@ -22,7 +22,10 @@
         "buildType": "app-bundle"
       },
       "distribution": "store",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sidekick-backend-qyrs.onrender.com/api"
+      }
     }
   },
   "submit": {

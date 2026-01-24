@@ -9,9 +9,9 @@ services:
       - key: DEBUG
         value: "false"
       - key: ALLOWED_HOSTS
-        value: "sidekick-backend.onrender.com"
+        value: "sidekick-backend-qyrs.onrender.com"
       - key: DATABASE_URL
         value: "postgresql://user:pass@host:5432/db"  # Replace with actual
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://yourfrontend.onrender.com"
+        value: "https://sidekick-backend-qyrs.onrender.com"
     healthCheckPath: /api/health/
