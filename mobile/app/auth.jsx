@@ -26,13 +26,44 @@ const validationSchema = Yup.object({
   }),
 });
 
+const getPasswordStrength = (password) => {
+  const criteria = [
+    { label: 'At least 8 characters', test: password.length >= 8 },
+    { label: 'Contains lowercase letter', test: /[a-z]/.test(password) },
+    { label: 'Contains uppercase letter', test: /[A-Z]/.test(password) },
+    { label: 'Contains number', test: /\d/.test(password) },
+    { label: 'Contains special character', test: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) },
+  ];
+
+  const metCount = criteria.filter(c => c.test).length;
+
+  let strength = 'Weak';
+  let color = colors.expense; // red
+  if (metCount >= 5) {
+    strength = 'Strong';
+    color = colors.profit; // green
+  } else if (metCount >= 3) {
+    strength = 'Good';
+    color = colors.profit; // green, or yellow
+  } else if (metCount >= 2) {
+    strength = 'Fair';
+    color = colors.textMuted; // yellow or something
+  }
+
+  return { strength, color, criteria };
+};
+
 export default function Login() {
   const [loading, setLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { setIsAuthenticated, setUser } = useContext(AuthContext);
   const { colors } = useContext(ThemeContext);
   const router = useRouter();
   const { showToast } = useToast();
+
+  const passwordStrength = isRegistering ? getPasswordStrength(formik.values.password) : null;
 
   const formik = useFormik({
     initialValues: {
@@ -146,23 +177,61 @@ export default function Login() {
             {formik.errors.email}
           </Text>
         )}
-        <TextInput
-          placeholder="Security Password"
-          placeholderTextColor={colors.textMuted}
-          secureTextEntry
-          style={{
-            backgroundColor: colors.card,
-            borderColor: formik.errors.password && formik.touched.password ? colors.expense : colors.border,
-            borderWidth: 1,
-            padding: 16,
-            borderRadius: 12,
-            color: colors.textMain,
-          }}
-          value={formik.values.password}
-          onChangeText={formik.handleChange('password')}
-          onBlur={formik.handleBlur('password')}
-          editable={!loading}
-        />
+        <View style={{ position: 'relative' }}>
+          <TextInput
+            placeholder="Security Password"
+            placeholderTextColor={colors.textMuted}
+            secureTextEntry={!showPassword}
+            style={{
+              backgroundColor: colors.card,
+              borderColor: formik.errors.password && formik.touched.password ? colors.expense : colors.border,
+              borderWidth: 1,
+              padding: 16,
+              paddingRight: 50, // Space for the icon
+              borderRadius: 12,
+              color: colors.textMain,
+            }}
+            value={formik.values.password}
+            onChangeText={formik.handleChange('password')}
+            onBlur={formik.handleBlur('password')}
+            editable={!loading}
+          />
+          <TouchableOpacity
+            onPress={() => setShowPassword(!showPassword)}
+            style={{
+              position: 'absolute',
+              right: 16,
+              top: 16,
+              padding: 4,
+            }}
+            disabled={loading}
+          >
+            <Ionicons
+              name={showPassword ? "eye-off" : "eye"}
+              size={20}
+              color={colors.textMuted}
+            />
+          </TouchableOpacity>
+        </View>
+        {isRegistering && passwordStrength && (
+          <View style={{ marginTop: 8 }}>
+            <Text style={{ color: passwordStrength.color, fontSize: 14, fontWeight: 'bold' }}>
+              Password Strength: {passwordStrength.strength}
+            </Text>
+            {passwordStrength.criteria.map((criterion, index) => (
+              <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                <Ionicons
+                  name={criterion.test ? "checkmark-circle" : "close-circle"}
+                  size={14}
+                  color={criterion.test ? colors.profit : colors.expense}
+                />
+                <Text style={{ color: colors.textMuted, fontSize: 12, marginLeft: 4 }}>
+                  {criterion.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
         {formik.errors.password && formik.touched.password && (
           <Text style={{ color: colors.expense, fontSize: 12, marginTop: 4 }}>
             {formik.errors.password}
@@ -171,23 +240,42 @@ export default function Login() {
 
         {isRegistering && (
           <>
-            <TextInput
-              placeholder="Confirm Password"
-              placeholderTextColor={colors.textMuted}
-              secureTextEntry
-              style={{
-                backgroundColor: colors.card,
-                borderColor: formik.errors.confirmPassword && formik.touched.confirmPassword ? colors.expense : colors.border,
-                borderWidth: 1,
-                padding: 16,
-                borderRadius: 12,
-                color: colors.textMain,
-              }}
-              value={formik.values.confirmPassword}
-              onChangeText={formik.handleChange('confirmPassword')}
-              onBlur={formik.handleBlur('confirmPassword')}
-              editable={!loading}
-            />
+            <View style={{ position: 'relative' }}>
+              <TextInput
+                placeholder="Confirm Password"
+                placeholderTextColor={colors.textMuted}
+                secureTextEntry={!showConfirmPassword}
+                style={{
+                  backgroundColor: colors.card,
+                  borderColor: formik.errors.confirmPassword && formik.touched.confirmPassword ? colors.expense : colors.border,
+                  borderWidth: 1,
+                  padding: 16,
+                  paddingRight: 50, // Space for the icon
+                  borderRadius: 12,
+                  color: colors.textMain,
+                }}
+                value={formik.values.confirmPassword}
+                onChangeText={formik.handleChange('confirmPassword')}
+                onBlur={formik.handleBlur('confirmPassword')}
+                editable={!loading}
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{
+                  position: 'absolute',
+                  right: 16,
+                  top: 16,
+                  padding: 4,
+                }}
+                disabled={loading}
+              >
+                <Ionicons
+                  name={showConfirmPassword ? "eye-off" : "eye"}
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </TouchableOpacity>
+            </View>
             {formik.errors.confirmPassword && formik.touched.confirmPassword && (
               <Text style={{ color: colors.expense, fontSize: 12, marginTop: 4 }}>
                 {formik.errors.confirmPassword}
