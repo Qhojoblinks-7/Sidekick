@@ -16,6 +16,7 @@ const PageHeader = ({
   const styles = StyleSheet.create({
     header: {
       marginBottom: 32,
+      paddingHorizontal: 16,
     },
     headerRow: {
       flexDirection: "row",

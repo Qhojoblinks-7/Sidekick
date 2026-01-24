@@ -240,7 +240,7 @@ export default function Settings() {
     handleLogout();
   };
 
-  const SettingOption = ({ icon, label, value, onPress, isSyncing }) => (
+  const SettingOption = ({ icon, label, value, onPress, isSyncing, marginBottom = 12 }) => (
     <TouchableOpacity
       onPress={onPress}
       style={{
@@ -252,7 +252,7 @@ export default function Settings() {
         borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,
-        marginBottom: 12,
+        marginBottom,
       }}
       disabled={isSyncing}
     >
@@ -293,12 +293,19 @@ export default function Settings() {
       height: 600,
       paddingHorizontal: 16,
       paddingTop: 24,
-      paddingBottom: 100,
+      paddingBottom: 150,
     },
     header: {
       paddingHorizontal: 16,
       paddingTop: 24,
       paddingBottom: 16,
+      marginBottom: 32,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    logoutButton: {
+      padding: 8,
     },
     title: {
       color: colors.textMuted,
@@ -492,6 +499,9 @@ export default function Settings() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.mainTitle}>Management</Text>
+        <TouchableOpacity onPress={handleSignOut} style={styles.logoutButton}>
+          <Ionicons name="log-out-outline" size={24} color={colors.expense} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scroll}>
@@ -567,11 +577,8 @@ export default function Settings() {
           label="SMS Capture"
           value={smsEnabled ? "Enabled" : "Disabled"}
           onPress={handleSmsToggle}
+          marginBottom={40}
         />
-
-        <TouchableOpacity style={styles.signOut} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
 
         {/* Daily Target Modal */}
         <Modal

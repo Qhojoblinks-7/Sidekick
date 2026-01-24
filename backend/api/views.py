@@ -72,6 +72,7 @@ class RegisterDriverView(APIView):
                 email=email,
                 password=password
             )
+            print(f"Created user: {user.username}, is_active: {user.is_active}")
 
             return Response(
                 {'message': 'Driver registered successfully'},

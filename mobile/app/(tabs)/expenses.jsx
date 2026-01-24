@@ -90,14 +90,12 @@ export default function Expenses() {
       paddingHorizontal: 16,
       paddingTop: 24,
       paddingBottom: 16,
+      marginBottom: 32,
     },
     scroll: {
       height: 600,
       paddingHorizontal: 16,
       paddingBottom: 20,
-    },
-    header: {
-      marginBottom: 32,
     },
     title: {
       color: colors.textMuted,

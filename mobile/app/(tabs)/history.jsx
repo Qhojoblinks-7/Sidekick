@@ -104,6 +104,7 @@ export default function History() {
       paddingHorizontal: 16,
       paddingTop: 24,
       paddingBottom: 16,
+      marginBottom: 32,
     },
     scroll: {
       paddingHorizontal: 16,

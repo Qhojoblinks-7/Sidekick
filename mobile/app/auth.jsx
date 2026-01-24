@@ -79,10 +79,10 @@ export default function Login() {
           ? {
               email: values.email,
               username: values.email,
-              password: values.password,
-              password2: values.confirmPassword,
+              password: values.password.trim(),
+              password2: values.confirmPassword.trim(),
             }
-          : { username: values.email, password: values.password };
+          : { username: values.email, password: values.password.trim() };
 
         console.log('API URL:', process.env.EXPO_PUBLIC_API_URL);
         console.log('Endpoint:', endpoint);
