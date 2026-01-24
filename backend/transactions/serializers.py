@@ -11,8 +11,9 @@ class TransactionSerializer(serializers.ModelSerializer):
         read_only_fields = ['user', 'created_at']
 
     def create(self, validated_data):
-        # Automatically assign user from request
-        validated_data['user'] = self.context['request'].user
+        # Automatically assign user from request if not already set
+        if 'user' not in validated_data:
+            validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
 
 

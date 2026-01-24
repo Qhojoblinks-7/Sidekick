@@ -13,8 +13,13 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const bootstrapAsync = async () => {
       try {
-        const token = await getAccessToken();
-        setIsAuthenticated(!!token);
+        const rememberMe = await SecureStore.getItemAsync("rememberMe");
+        if (rememberMe === "false") {
+          setIsAuthenticated(false);
+        } else {
+          const token = await getAccessToken();
+          setIsAuthenticated(!!token);
+        }
       } catch (error) {
         console.error("Failed to check auth status:", error);
       } finally {

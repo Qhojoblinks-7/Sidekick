@@ -8,9 +8,9 @@ export const GoalProgressBar = ({ current, target = 500 }) => {
 
   const styles = StyleSheet.create({
     container: {
-      width: '100%',
       backgroundColor: colors.card,
-      padding: 24,
+      padding: 16,
+      marginHorizontal: 16,
       borderRadius: 32,
       borderWidth: 1,
       borderColor: colors.border,

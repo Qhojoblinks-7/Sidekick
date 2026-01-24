@@ -26,44 +26,43 @@ const validationSchema = Yup.object({
   }),
 });
 
-const getPasswordStrength = (password) => {
-  const criteria = [
-    { label: 'At least 8 characters', test: password.length >= 8 },
-    { label: 'Contains lowercase letter', test: /[a-z]/.test(password) },
-    { label: 'Contains uppercase letter', test: /[A-Z]/.test(password) },
-    { label: 'Contains number', test: /\d/.test(password) },
-    { label: 'Contains special character', test: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) },
-  ];
-
-  const metCount = criteria.filter(c => c.test).length;
-
-  let strength = 'Weak';
-  let color = colors.expense; // red
-  if (metCount >= 5) {
-    strength = 'Strong';
-    color = colors.profit; // green
-  } else if (metCount >= 3) {
-    strength = 'Good';
-    color = colors.profit; // green, or yellow
-  } else if (metCount >= 2) {
-    strength = 'Fair';
-    color = colors.textMuted; // yellow or something
-  }
-
-  return { strength, color, criteria };
-};
-
 export default function Login() {
   const [loading, setLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const { setIsAuthenticated, setUser } = useContext(AuthContext);
   const { colors } = useContext(ThemeContext);
   const router = useRouter();
   const { showToast } = useToast();
 
-  const passwordStrength = isRegistering ? getPasswordStrength(formik.values.password) : null;
+  const getPasswordStrength = (password) => {
+    const criteria = [
+      { label: 'At least 8 characters', test: password.length >= 8 },
+      { label: 'Contains lowercase letter', test: /[a-z]/.test(password) },
+      { label: 'Contains uppercase letter', test: /[A-Z]/.test(password) },
+      { label: 'Contains number', test: /\d/.test(password) },
+      { label: 'Contains special character', test: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) },
+    ];
+
+    const metCount = criteria.filter(c => c.test).length;
+
+    let strength = 'Weak';
+    let color = colors.expense; // red
+    if (metCount >= 5) {
+      strength = 'Strong';
+      color = colors.profit; // green
+    } else if (metCount >= 3) {
+      strength = 'Good';
+      color = colors.profit; // green, or yellow
+    } else if (metCount >= 2) {
+      strength = 'Fair';
+      color = colors.textMuted; // yellow or something
+    }
+
+    return { strength, color, criteria };
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -111,6 +110,7 @@ export default function Login() {
           } else {
             await SecureStore.setItemAsync("accessToken", data.access);
             await SecureStore.setItemAsync("refreshToken", data.refresh);
+            await SecureStore.setItemAsync("rememberMe", rememberMe ? "true" : "false");
             setIsAuthenticated(true);
             setUser({ email: values.email, username: values.email });
             showToast("Login successful!", "success");
@@ -126,8 +126,10 @@ export default function Login() {
        }
       setLoading(false);
     },
+
   });
 
+  const passwordStrength = formik.values.password ? getPasswordStrength(formik.values.password) : null;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 24, justifyContent: 'center' }}>
@@ -282,6 +284,21 @@ export default function Login() {
               </Text>
             )}
           </>
+        )}
+
+        {!isRegistering && (
+          <TouchableOpacity
+            onPress={() => setRememberMe(!rememberMe)}
+            style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16 }}
+            disabled={loading}
+          >
+            <Ionicons
+              name={rememberMe ? "checkbox" : "checkbox-outline"}
+              size={20}
+              color={colors.textMain}
+            />
+            <Text style={{ color: colors.textMain, marginLeft: 8 }}>Remember me</Text>
+          </TouchableOpacity>
         )}
 
         <TouchableOpacity

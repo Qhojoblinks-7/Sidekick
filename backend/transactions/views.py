@@ -2,19 +2,29 @@ import logging
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, BasePermission
 from django.db.models import Sum
+from django.contrib.auth.models import User
 from .models import Transaction, Expense
 from .serializers import TransactionSerializer, ExpenseSerializer
 from datetime import date
 
 logger = logging.getLogger(__name__)
 
+class IsAuthenticatedOrSMSBridge(BasePermission):
+    """
+    Allow authenticated users, or POST requests from localhost (for SMS bridge)
+    """
+    def has_permission(self, request, view):
+        if request.method == 'POST' and request.META.get('REMOTE_ADDR') in ['127.0.0.1', 'localhost']:
+            return True
+        return request.user and request.user.is_authenticated
+
 
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrSMSBridge]
 
     def get_queryset(self):
         # Filter transactions by current user only
@@ -23,7 +33,12 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         # Automatically assign user on creation
-        serializer.save(user=self.request.user)
+        if self.request.user.is_authenticated:
+            serializer.save(user=self.request.user)
+        else:
+            # For SMS bridge, assign to first user (for testing)
+            first_user = User.objects.first()
+            serializer.save(user=first_user)
 
 
 class ExpenseViewSet(viewsets.ModelViewSet):

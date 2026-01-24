@@ -13,10 +13,16 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
         # Allow login with email as username
+        print(f"Login attempt: {request.data}")
         if 'username' in request.data and '@' in request.data['username']:
-            user = User.objects.filter(email=request.data['username']).first()
+            email = request.data['username']
+            user = User.objects.filter(email=email).first()
+            print(f"User lookup by email '{email}': {user}")
             if user:
+                print(f"User found: {user.username}, is_active: {user.is_active}")
                 request.data['username'] = user.username
+            else:
+                print(f"No user found with email '{email}'")
         return super().post(request, *args, **kwargs)
 
 class RegisterDriverView(APIView):

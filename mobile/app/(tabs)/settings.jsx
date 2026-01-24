@@ -14,6 +14,8 @@ import { Button } from "../../components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeContext } from "../../contexts/ThemeContext";
 import { apiCall } from "../../services/apiService";
+import { requestSMSPermissions } from "../../services/smsService";
+import SMSConsentModal from "../../components/SMSConsentModal";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "expo-router";
 import {
@@ -22,6 +24,7 @@ import {
   setLastSyncTime,
   setDailyTarget,
   setVehicleType,
+  setSmsEnabled,
   setSummary,
   setTransactions,
   setExpenses,
@@ -37,7 +40,9 @@ export default function Settings() {
   const { isOnline, isSyncing, lastSyncTime } = useSelector(
     (state) => state.ui,
   );
-  const { dailyTarget, vehicleType } = useSelector((state) => state.settings);
+  const { dailyTarget, vehicleType, smsEnabled } = useSelector(
+    (state) => state.settings,
+  );
   const { summary, transactions } = useSelector((state) => state.data);
 
   // Calculate rider stats
@@ -61,6 +66,7 @@ export default function Settings() {
   // Modal states
   const [targetModalVisible, setTargetModalVisible] = useState(false);
   const [vehicleModalVisible, setVehicleModalVisible] = useState(false);
+  const [smsConsentModalVisible, setSmsConsentModalVisible] = useState(false);
   const [alertModalVisible, setAlertModalVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
@@ -198,6 +204,36 @@ export default function Settings() {
   const selectVehicle = (type) => {
     dispatch(setVehicleType(type));
     setVehicleModalVisible(false);
+  };
+
+  const handleSmsToggle = () => {
+    if (smsEnabled) {
+      // Disable SMS
+      dispatch(setSmsEnabled(false));
+      showAlert("SMS Disabled", "SMS capture has been turned off.");
+    } else {
+      // Show consent modal
+      setSmsConsentModalVisible(true);
+    }
+  };
+
+  const handleSmsConsent = async () => {
+    setSmsConsentModalVisible(false);
+    try {
+      const hasPermission = await requestSMSPermissions();
+      if (hasPermission) {
+        dispatch(setSmsEnabled(true));
+        showAlert("SMS Enabled", "SMS capture is now active. Transaction messages will be automatically processed.");
+      } else {
+        showAlert("Permission Denied", "SMS permission is required to enable SMS capture.");
+      }
+    } catch (error) {
+      showAlert("Error", "Failed to request SMS permissions.");
+    }
+  };
+
+  const handleSmsDeny = () => {
+    setSmsConsentModalVisible(false);
   };
 
   const handleSignOut = () => {
@@ -526,6 +562,13 @@ export default function Settings() {
           isSyncing={isSyncing}
         />
 
+        <SettingOption
+          icon="chatbubble-outline"
+          label="SMS Capture"
+          value={smsEnabled ? "Enabled" : "Disabled"}
+          onPress={handleSmsToggle}
+        />
+
         <TouchableOpacity style={styles.signOut} onPress={handleSignOut}>
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
@@ -611,6 +654,13 @@ export default function Settings() {
             </View>
           </View>
         </Modal>
+
+        {/* SMS Consent Modal */}
+        <SMSConsentModal
+          visible={smsConsentModalVisible}
+          onConsent={handleSmsConsent}
+          onDeny={handleSmsDeny}
+        />
 
         {/* Alert Modal */}
         <Modal

@@ -1,7 +1,10 @@
 {
   "expo": {
     "android": {
-      "package": "com.sidekick.deliverytracker"
+      "package": "com.sidekick.deliverytracker",
+      "permissions": [
+        "READ_SMS"
+      ]
     },
     "extra": {
       "eas": {

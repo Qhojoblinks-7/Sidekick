@@ -6,8 +6,8 @@ const darkColors = {
   border: '#2C2C2C',           // Charcoal
   textMain: '#F5F5F5',         // Cloud White
   textMuted: '#A0A0A0',        // Slate Gray
-  textSecondary: '#2C2C2C',
-  textTertiary: '#666666',
+  textSecondary: '#6b6464',
+  textTertiary: '#9c9c9c',
   primary: '#00A86B',          // Finance Green
   accent: '#F4C430',           // Warm Gold
   profit: '#22C55E',
