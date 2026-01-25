@@ -1,2 +1,2 @@
-export const API_BASE_URL = 'http://10.173.7.107:8000/api';
-export const SOCKET_BASE_URL = 'http://10.177.119.107:3001';
+export const API_BASE_URL = 'https://sidekick-backend-qyrs.onrender.com/api';
+export const SOCKET_BASE_URL = 'https://sidekick-backend-qyrs.onrender.com:3001';

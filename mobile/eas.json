@@ -14,7 +14,7 @@
       },
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.223.63.107:8000"
+        "EXPO_PUBLIC_API_URL": "https://sidekick-backend-qyrs.onrender.com"
       }
     },
     "production": {
