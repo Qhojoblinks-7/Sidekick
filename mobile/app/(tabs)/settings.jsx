@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import * as SecureStore from 'expo-secure-store';
 import {
   View,
   Text,
@@ -25,6 +26,7 @@ import {
   setDailyTarget,
   setVehicleType,
   setSmsEnabled,
+  loadSettings,
   setSummary,
   setTransactions,
   setExpenses,
@@ -103,6 +105,33 @@ export default function Settings() {
     checkBackendConnection();
   }, []);
 
+  useEffect(() => {
+    const loadSettingsFromStorage = async () => {
+      try {
+        const stored = await SecureStore.getItemAsync('settings');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          dispatch(loadSettings(parsed));
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    };
+    loadSettingsFromStorage();
+  }, []);
+
+  useEffect(() => {
+    const saveSettingsToStorage = async () => {
+      try {
+        const settingsToSave = { dailyTarget, vehicleType, smsEnabled };
+        await SecureStore.setItemAsync('settings', JSON.stringify(settingsToSave));
+      } catch (error) {
+        console.error('Error saving settings:', error);
+      }
+    };
+    saveSettingsToStorage();
+  }, [dailyTarget, vehicleType, smsEnabled]);
+
   const checkBackendConnection = async () => {
     try {
       const response = await apiCall("/api/summary/daily/");
@@ -119,7 +148,7 @@ export default function Settings() {
 
     // Timeout after 5 seconds
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
 
     try {
       const fetchOptions = { signal: controller.signal };

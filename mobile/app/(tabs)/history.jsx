@@ -1,4 +1,4 @@
-import React, { useMemo, useContext, useState } from "react";
+ import React, { useMemo, useContext, useState } from "react";
 import {
   View,
   Text,
@@ -12,8 +12,10 @@ import {
 } from "react-native";
 import { TransactionItem } from "../../components/TransactionItem";
 import { ThemeContext } from "../../contexts/ThemeContext";
-import { useSelector } from "react-redux";
-import { useUpdateTransaction } from "../../hooks/useTransactions";
+import { useSelector, useDispatch } from "react-redux";
+import { useUpdateTransaction, useUpdateExpense } from "../../hooks/useTransactions";
+import { removeTransaction, removeExpense, updateTransaction, updateExpense } from '../../store/store';
+import { apiCall } from '../../services/apiService';
 
 export default function History() {
   const { colors } = useContext(ThemeContext);
@@ -21,10 +23,28 @@ export default function History() {
     useSelector((state) => state.data);
   const { mutate: updateTransaction, isPending: isUpdating } =
     useUpdateTransaction();
+
+  const { mutate: updateExpense, isPending: isUpdatingExpense } = useUpdateExpense();
+
+  const dispatch = useDispatch();
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [deliveryFee, setDeliveryFee] = useState("");
+
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+
+  const [itemToDelete, setItemToDelete] = useState(null);
+  
+  const [editExpenseModalVisible, setEditExpenseModalVisible] = useState(false);
+  
+  const [selectedExpense, setSelectedExpense] = useState(null);
+  
+  const [expenseAmount, setExpenseAmount] = useState("");
+  
+  const [expenseCategory, setExpenseCategory] = useState("Fuel");
+  
+  const [expenseDescription, setExpenseDescription] = useState("");
 
   // Transform and combine data from Redux store
   const allTransactions = useMemo(() => {
@@ -94,6 +114,58 @@ export default function History() {
       return allTransactions.filter((tx) => tx.type === "expense");
     return allTransactions;
   }, [allTransactions, selectedFilter]);
+
+  const handleDelete = (item) => {
+    setItemToDelete(item);
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      const item = itemToDelete;
+      const isExpense = item.id.startsWith('exp-');
+      const endpoint = isExpense ? '/api/expenses/' : '/api/transactions/';
+      const id = item.id.replace(isExpense ? 'exp-' : 'tx-', '');
+      await apiCall(`${endpoint}${id}/`, { method: 'DELETE' });
+      if (isExpense) {
+        dispatch(removeExpense(parseInt(id)));
+      } else {
+        dispatch(removeTransaction(parseInt(id)));
+      }
+      Alert.alert('Success', 'Transaction deleted successfully');
+    } catch (error) {
+      console.error('Delete error:', error);
+      Alert.alert('Error', 'Failed to delete transaction');
+    } finally {
+      setDeleteModalVisible(false);
+      setItemToDelete(null);
+    }
+  };
+
+  const saveExpense = () => {
+    const value = parseFloat(expenseAmount);
+    if (isNaN(value) || value <= 0) {
+      Alert.alert("Invalid Amount", "Please enter a valid expense amount.");
+      return;
+    }
+    updateExpense(
+      {
+        id: selectedExpense.id.replace("exp-", ""),
+        updatedExpense: {
+          amount: value,
+          category: expenseCategory,
+          description: expenseDescription,
+        },
+      },
+      {
+        onSuccess: (result) => {
+          dispatch(updateExpense(result));
+          setEditExpenseModalVisible(false);
+          Alert.alert("Success", "Expense updated successfully");
+        },
+      },
+    );
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -303,11 +375,19 @@ export default function History() {
             type={item.type}
             status={item.status}
             onPress={() => {
-              if (item.type === "expense") return; // Don't edit expenses
-              setSelectedTransaction(item);
-              setDeliveryFee("");
-              setEditModalVisible(true);
+              if (item.type === "expense") {
+                setSelectedExpense(item);
+                setExpenseAmount(item.amount);
+                setExpenseCategory(item.platform);
+                setExpenseDescription("");
+                setEditExpenseModalVisible(true);
+              } else {
+                setSelectedTransaction(item);
+                setDeliveryFee("");
+                setEditModalVisible(true);
+              }
             }}
+            onLongPress={() => handleDelete(item)}
           />
         )}
         ListFooterComponent={
@@ -345,9 +425,10 @@ export default function History() {
                     },
                   },
                   {
-                    onSuccess: () => {
+                    onSuccess: (result) => {
+                      dispatch(updateTransaction(result));
                       setEditModalVisible(false);
-                      Alert.alert("Success", "Marked as tip!");
+                      Alert.alert("Success", "Transaction updated successfully");
                     },
                   },
                 );
@@ -401,7 +482,8 @@ export default function History() {
                       },
                     },
                     {
-                      onSuccess: () => {
+                      onSuccess: (result) => {
+                        dispatch(updateTransaction(result));
                         setEditModalVisible(false);
                         setDeliveryFee("");
                         Alert.alert("Success", "Delivery fee updated!");
@@ -419,6 +501,80 @@ export default function History() {
           </View>
         </View>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={deleteModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete Transaction</Text>
+            <Text style={styles.inputLabel}>Are you sure you want to delete this transaction? This action cannot be undone.</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setDeleteModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={confirmDelete}
+              >
+                <Text style={styles.saveButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+  
+      {/* Edit Expense Modal */}
+      <Modal
+        visible={editExpenseModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setEditExpenseModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Expense</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Amount"
+              keyboardType="numeric"
+              value={expenseAmount}
+              onChangeText={setExpenseAmount}
+            />
+            <Text style={styles.inputLabel}>Category</Text>
+            <View style={[styles.vehicleOption, { marginBottom: 20 }]}>
+              <Text style={styles.vehicleText}>{expenseCategory}</Text>
+            </View>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Description"
+              value={expenseDescription}
+              onChangeText={setExpenseDescription}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setEditExpenseModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={saveExpense}
+              >
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
-}
+  }

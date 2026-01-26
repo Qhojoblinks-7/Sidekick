@@ -41,19 +41,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
             serializer.save(user=first_user)
 
 
-class ExpenseViewSet(viewsets.ModelViewSet):
-    queryset = Expense.objects.all()
-    serializer_class = ExpenseSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        # Filter expenses by current user only
-        return Expense.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        # Automatically assign user on creation
-        logger.info(f"TransactionViewSet perform_create called by user: {self.request.user}")
-        serializer.save(user=self.request.user)
 
 
 class ExpenseViewSet(viewsets.ModelViewSet):

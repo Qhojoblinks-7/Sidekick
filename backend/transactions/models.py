@@ -35,7 +35,8 @@ class Expense(models.Model):
         ("FUEL", "Fuel"),
         ("DATA", "Data"),
         ("FOOD", "Food"),
-        ("REPAIR", "Repairs"),
+        ("REPAIRS", "Repairs"),
+        ("OTHER", "Other"),
     ]
 
     # User association for data isolation - REQUIRED for SaaS

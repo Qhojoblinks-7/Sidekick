@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/Button';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeContext } from '../../contexts/ThemeContext';
+import { useToast } from '../../contexts/ToastContext';
 import { API_BASE_URL } from '../../constants/API';
 import { apiCall } from '../../services/apiService';
 import { useSelector, useDispatch } from 'react-redux';
@@ -11,6 +12,7 @@ import { addExpense, setSummary } from '../../store/store';
 
 export default function Expenses() {
    const { colors } = useContext(ThemeContext);
+   const { showToast } = useToast();
    const dispatch = useDispatch();
    const { dailyTarget } = useSelector(state => state.settings);
    const { summary, expenses } = useSelector(state => state.data);
@@ -65,13 +67,13 @@ export default function Expenses() {
       };
       dispatch(setSummary(updatedSummary));
 
-      // Reset form
+      // Reset form and close modal
       setAmount('');
       setCategory('Fuel');
+      setAddExpenseModalVisible(false);
 
-      Alert.alert('Success', 'Expense logged successfully!', [
-        { text: 'OK', onPress: () => router.replace('/') }
-      ]);
+      // Show success toast
+      showToast('Expense logged successfully!', 'success');
 
     } catch (error) {
       console.error('Error saving expense:', error);

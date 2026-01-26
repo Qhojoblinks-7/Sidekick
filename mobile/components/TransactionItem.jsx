@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeContext } from '../contexts/ThemeContext';
 
-export const TransactionItem = ({ platform, amount, time, type, status, onPress }) => {
+export const TransactionItem = ({ platform, amount, time, type, status, onPress, onLongPress }) => {
   const { colors } = useContext(ThemeContext);
   const isExpense = type === 'expense';
   const isDebt = type === 'debt';
@@ -103,10 +103,10 @@ export const TransactionItem = ({ platform, amount, time, type, status, onPress 
     },
   });
 
-  const Container = onPress ? TouchableOpacity : View;
+  const Container = (onPress || onLongPress) ? TouchableOpacity : View;
 
   return (
-    <Container style={styles.container} onPress={onPress}>
+    <Container style={styles.container} onPress={onPress} onLongPress={onLongPress}>
       <View style={styles.leftSection}>
         <View style={styles.iconContainer}>
           {getIcon()}
@@ -125,7 +125,7 @@ export const TransactionItem = ({ platform, amount, time, type, status, onPress 
       </View>
       <View style={styles.right}>
         <Text style={[styles.amount, { color: isExpense || isDebt ? colors.expense : colors.textMain }]}>
-          {isExpense || isDebt ? '-' : '+'} GH₵ {amount}
+          {isExpense || isDebt ? '-' : '+'} GH₵ {parseFloat(amount || 0).toFixed(2)}
         </Text>
         <Text style={styles.typeText}>
           {type === 'profit' ? 'Your Fee' : type === 'expense' ? 'Expense' : type === 'debt' ? 'Platform Debt' : type}

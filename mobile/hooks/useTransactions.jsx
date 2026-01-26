@@ -57,3 +57,31 @@ export const useUpdateTransaction = () => {
     },
   });
 };
+
+export const useUpdateExpense = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, updatedExpense }) => {
+      try {
+        const response = await apiCall(`/api/expenses/${id}/`, {
+          method: 'PUT',
+          body: JSON.stringify(updatedExpense),
+        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Failed to update expense: ${response.status} ${response.statusText}. ${errorData.detail || ''}`);
+        }
+        return response.json();
+      } catch (error) {
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          throw new Error('Network error: Unable to connect to the server. Please check your internet connection.');
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+    },
+  });
+};

@@ -27,6 +27,7 @@ const settingsSlice = createSlice({
     setDailyTarget: (state, action) => { state.dailyTarget = action.payload; },
     setVehicleType: (state, action) => { state.vehicleType = action.payload; },
     setSmsEnabled: (state, action) => { state.smsEnabled = action.payload; },
+    loadSettings: (state, action) => { Object.assign(state, action.payload); },
   },
 });
 
@@ -48,6 +49,20 @@ const dataSlice = createSlice({
     setExpenses: (state, action) => { state.expenses = action.payload; },
     addTransaction: (state, action) => { state.transactions.unshift(action.payload); },
     addExpense: (state, action) => { state.expenses.unshift(action.payload); },
+    removeTransaction: (state, action) => { state.transactions = state.transactions.filter(tx => tx.id != action.payload); },
+    removeExpense: (state, action) => { state.expenses = state.expenses.filter(exp => exp.id != action.payload); },
+    updateTransaction: (state, action) => {
+      const index = state.transactions.findIndex(tx => tx.id === action.payload.id);
+      if (index !== -1) {
+        state.transactions[index] = { ...state.transactions[index], ...action.payload };
+      }
+    },
+    updateExpense: (state, action) => {
+      const index = state.expenses.findIndex(exp => exp.id === action.payload.id);
+      if (index !== -1) {
+        state.expenses[index] = { ...state.expenses[index], ...action.payload };
+      }
+    },
     updatePlatformDebt: (state, action) => { state.summary.total_debt = action.payload; },
   },
 });
@@ -60,6 +75,8 @@ export const {
   setExpenses,
   addTransaction,
   addExpense,
+  removeTransaction,
+  removeExpense,
   updatePlatformDebt
 } = dataSlice.actions;
 

@@ -69,7 +69,7 @@ export const DashboardCard = ({ label, amount, type }) => {
       <View style={styles.amountContainer}>
         <Text style={styles.currency}>GH₵</Text>
         <Text style={styles.amount}>
-          {amount}
+          {parseFloat(amount || 0).toFixed(2)}
         </Text>
       </View>
     </View>

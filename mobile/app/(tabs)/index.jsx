@@ -15,6 +15,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemeContext } from "../../contexts/ThemeContext";
+import { useToast } from "../../contexts/ToastContext";
 import { GoalProgressBar } from "../../components/GoalProgressBar";
 import PageHeader from "../../components/PageHeader";
 import DashboardCards from "../../components/DashboardCards";
@@ -28,6 +29,7 @@ import io from "socket.io-client";
 
 export default function Dashboard() {
   const { colors } = useContext(ThemeContext);
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
   const { mutate: addTransaction, isPending: isAdding } = useAddTransaction();
   const { summary, transactions: transactionsData } = useSelector(
@@ -41,6 +43,7 @@ export default function Dashboard() {
   const [customDate, setCustomDate] = useState(new Date());
   const [quickAddModalVisible, setQuickAddModalVisible] = useState(false);
   const [manualAmount, setManualAmount] = useState("");
+  const [amountReceived, setAmountReceived] = useState("");
   const [manualPlatform, setManualPlatform] = useState("YANGO");
 
   useDashboardData();
@@ -249,18 +252,28 @@ export default function Dashboard() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add Manual Transaction</Text>
 
-            <Text style={styles.inputLabel}>Amount (GHS)</Text>
+            <Text style={styles.inputLabel}>Full Fee (GHS)</Text>
             <TextInput
-              style={styles.input}
-              placeholder="0.00"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="numeric"
-              value={manualAmount}
-              onChangeText={setManualAmount}
-              autoFocus={true}
-            />
+               style={styles.input}
+               placeholder="0.00"
+               placeholderTextColor={colors.textMuted}
+               keyboardType="numeric"
+               value={manualAmount}
+               onChangeText={setManualAmount}
+               autoFocus={true}
+             />
 
-            <Text style={styles.inputLabel}>Platform</Text>
+             <Text style={styles.inputLabel}>Amount Received (GHS)</Text>
+             <TextInput
+               style={styles.input}
+               placeholder="0.00"
+               placeholderTextColor={colors.textMuted}
+               keyboardType="numeric"
+               value={amountReceived}
+               onChangeText={setAmountReceived}
+             />
+
+             <Text style={styles.inputLabel}>Platform</Text>
             <View style={styles.platformContainer}>
               {["YANGO", "BOLT"].map((platform) => (
                 <TouchableOpacity
@@ -294,31 +307,41 @@ export default function Dashboard() {
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={() => {
-                  if (!manualAmount || parseFloat(manualAmount) <= 0) {
-                    Alert.alert(
-                      "Invalid Amount",
-                      "Please enter a valid amount.",
-                    );
-                    return;
-                  }
-                  addTransaction(
-                    {
-                      tx_id: `manual-${Date.now()}`,
-                      amount_received: parseFloat(manualAmount),
-                      rider_profit: parseFloat(manualAmount),
-                      platform_debt: 0,
-                      platform: manualPlatform,
-                    },
+                   const fullFee = parseFloat(manualAmount);
+                   const amtReceived = parseFloat(amountReceived);
+                   if (isNaN(fullFee) || fullFee <= 0 || isNaN(amtReceived) || amtReceived <= 0) {
+                     Alert.alert(
+                       "Invalid Amounts",
+                       "Please enter valid amounts.",
+                     );
+                     return;
+                   }
+                   let riderProfit, platformDebt, isTip = false;
+                   if (fullFee <= amtReceived) {
+                     riderProfit = fullFee;
+                     platformDebt = amtReceived - fullFee;
+                   } else {
+                     riderProfit = amtReceived;
+                     platformDebt = 0;
+                     isTip = true;
+                   }
+                   addTransaction(
+                     {
+                       tx_id: `manual-${Date.now()}`,
+                       amount_received: amtReceived,
+                       rider_profit: riderProfit,
+                       platform_debt: platformDebt,
+                       platform: manualPlatform,
+                       is_tip: isTip,
+                     },
                     {
                       onSuccess: () => {
-                        setQuickAddModalVisible(false);
-                        setManualAmount("");
-                        setManualPlatform("YANGO");
-                        Alert.alert(
-                          "Success",
-                          "Manual transaction added successfully!",
-                        );
-                      },
+                          setQuickAddModalVisible(false);
+                          setManualAmount("");
+                          setAmountReceived("");
+                          setManualPlatform("YANGO");
+                          showToast("Manual transaction added successfully!", "success");
+                        },
                     },
                   );
                 }}
@@ -335,3 +358,4 @@ export default function Dashboard() {
     </SafeAreaView>
   );
 }
+
