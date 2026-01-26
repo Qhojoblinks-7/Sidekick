@@ -9,6 +9,7 @@ import { API_BASE_URL } from '../../constants/API';
 import { apiCall } from '../../services/apiService';
 import { useSelector, useDispatch } from 'react-redux';
 import { addExpense, setSummary } from '../../store/store';
+import CustomDateModal from '../../components/CustomDateModal';
 
 export default function Expenses() {
    const { colors } = useContext(ThemeContext);
@@ -20,7 +21,11 @@ export default function Expenses() {
    const [amount, setAmount] = useState('');
    const [category, setCategory] = useState('Fuel');
    const [isLoading, setIsLoading] = useState(false);
-   const [addExpenseModalVisible, setAddExpenseModalVisible] = useState(false);
+   const [expenseDate, setExpenseDate] = useState(new Date());
+   const [expenseDateModalVisible, setExpenseDateModalVisible] = useState(false);
+   const [amountPopupVisible, setAmountPopupVisible] = useState(false);
+   const [categoryPopupVisible, setCategoryPopupVisible] = useState(false);
+   const [datePopupVisible, setDatePopupVisible] = useState(false);
 
   const categories = ['Fuel', 'Data', 'Food', 'Repairs', 'Other'];
   const categoryMap = {
@@ -45,6 +50,7 @@ export default function Expenses() {
           amount: parseFloat(amount),
           category: categoryMap[category],
           description: `${category} expense`,
+          created_at: expenseDate.toISOString(),
         }),
       });
 
@@ -67,10 +73,10 @@ export default function Expenses() {
       };
       dispatch(setSummary(updatedSummary));
 
-      // Reset form and close modal
+      // Reset form
       setAmount('');
       setCategory('Fuel');
-      setAddExpenseModalVisible(false);
+      setExpenseDate(new Date());
 
       // Show success toast
       showToast('Expense logged successfully!', 'success');
@@ -269,6 +275,19 @@ export default function Expenses() {
       color: colors.textMain,
       fontWeight: 'bold',
     },
+    dateButton: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      padding: 16,
+      backgroundColor: colors.card,
+      marginBottom: 20,
+      alignItems: 'center',
+    },
+    dateButtonText: {
+      fontSize: 16,
+      color: colors.textMain,
+    },
   });
 
   // Calculate today's expenses
@@ -300,7 +319,7 @@ export default function Expenses() {
         {/* Big Add Button */}
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => setAddExpenseModalVisible(true)}
+          onPress={() => setAmountPopupVisible(true)}
         >
           <Ionicons name="add" size={60} color={colors.textMain} />
         </TouchableOpacity>
@@ -313,7 +332,7 @@ export default function Expenses() {
               key={cat}
               onPress={() => {
                 setCategory(cat);
-                setAddExpenseModalVisible(true);
+                setAmountPopupVisible(true);
               }}
               style={styles.categoryIcon}
             >
@@ -334,16 +353,16 @@ export default function Expenses() {
         </View>
       </ScrollView>
 
-      {/* Add Expense Modal */}
+      {/* Amount Popup */}
       <Modal
-        visible={addExpenseModalVisible}
+        visible={amountPopupVisible}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setAddExpenseModalVisible(false)}
+        onRequestClose={() => setAmountPopupVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add</Text>
+            <Text style={styles.modalTitle}>Enter Amount</Text>
 
             <Text style={styles.inputLabel}>Amount (GHS)</Text>
             <TextInput
@@ -355,6 +374,42 @@ export default function Expenses() {
               onChangeText={setAmount}
               autoFocus={true}
             />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setAmountPopupVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={() => {
+                  if (!amount || parseFloat(amount) <= 0) {
+                    Alert.alert('Invalid Amount', 'Please enter a valid expense amount.');
+                    return;
+                  }
+                  setAmountPopupVisible(false);
+                  setCategoryPopupVisible(true);
+                }}
+              >
+                <Text style={styles.saveButtonText}>Next</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Category Popup */}
+      <Modal
+        visible={categoryPopupVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setCategoryPopupVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Category</Text>
 
             <Text style={styles.categoryTitle}>Category</Text>
             <View style={styles.modalCategoriesContainer}>
@@ -374,13 +429,56 @@ export default function Expenses() {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setAddExpenseModalVisible(false)}
+                onPress={() => setCategoryPopupVisible(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
-                onPress={handleSaveExpense}
+                onPress={() => {
+                  setCategoryPopupVisible(false);
+                  setDatePopupVisible(true);
+                }}
+              >
+                <Text style={styles.saveButtonText}>Next</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Date Popup */}
+      <Modal
+        visible={datePopupVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setDatePopupVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Date</Text>
+
+            <Text style={styles.inputLabel}>Date</Text>
+            <TouchableOpacity
+              style={styles.dateButton}
+              onPress={() => setExpenseDateModalVisible(true)}
+            >
+              <Text style={styles.dateButtonText}>{expenseDate.toDateString()}</Text>
+            </TouchableOpacity>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setDatePopupVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={() => {
+                  setDatePopupVisible(false);
+                  handleSaveExpense();
+                }}
                 disabled={isLoading}
               >
                 <Text style={styles.saveButtonText}>
@@ -391,6 +489,14 @@ export default function Expenses() {
           </View>
         </View>
       </Modal>
+
+      <CustomDateModal
+        customDateModalVisible={expenseDateModalVisible}
+        setCustomDateModalVisible={setExpenseDateModalVisible}
+        customDate={expenseDate}
+        setCustomDate={setExpenseDate}
+        setSelectedPeriod={() => {}}
+      />
 
     </SafeAreaView>
   );

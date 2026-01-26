@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -15,8 +15,7 @@ import { Button } from "../../components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeContext } from "../../contexts/ThemeContext";
 import { apiCall } from "../../services/apiService";
-import { requestSMSPermissions } from "../../services/smsService";
-import SMSConsentModal from "../../components/SMSConsentModal";
+import ManualSMSModal from "../../components/ManualSMSModal";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "expo-router";
 import {
@@ -47,6 +46,8 @@ export default function Settings() {
   );
   const { summary, transactions } = useSelector((state) => state.data);
 
+  console.log('Settings component rendered, smsEnabled:', smsEnabled);
+
   // Calculate rider stats
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
@@ -68,7 +69,7 @@ export default function Settings() {
   // Modal states
   const [targetModalVisible, setTargetModalVisible] = useState(false);
   const [vehicleModalVisible, setVehicleModalVisible] = useState(false);
-  const [smsConsentModalVisible, setSmsConsentModalVisible] = useState(false);
+  const [manualSMSModalVisible, setManualSMSModalVisible] = useState(false);
   const [alertModalVisible, setAlertModalVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
@@ -107,10 +108,13 @@ export default function Settings() {
 
   useEffect(() => {
     const loadSettingsFromStorage = async () => {
+      console.log('Loading settings from AsyncStorage');
       try {
-        const stored = await SecureStore.getItemAsync('settings');
+        const stored = await AsyncStorage.getItem('settings');
+        console.log('Stored settings:', stored);
         if (stored) {
           const parsed = JSON.parse(stored);
+          console.log('Parsed settings:', parsed);
           dispatch(loadSettings(parsed));
         }
       } catch (error) {
@@ -124,7 +128,9 @@ export default function Settings() {
     const saveSettingsToStorage = async () => {
       try {
         const settingsToSave = { dailyTarget, vehicleType, smsEnabled };
-        await SecureStore.setItemAsync('settings', JSON.stringify(settingsToSave));
+        console.log('Saving settings:', settingsToSave);
+        await AsyncStorage.setItem('settings', JSON.stringify(settingsToSave));
+        console.log('Settings saved successfully');
       } catch (error) {
         console.error('Error saving settings:', error);
       }
@@ -236,34 +242,16 @@ export default function Settings() {
   };
 
   const handleSmsToggle = () => {
-    if (smsEnabled) {
-      // Disable SMS
-      dispatch(setSmsEnabled(false));
-      showAlert("SMS Disabled", "SMS capture has been turned off.");
+    console.log('handleSmsToggle called, current smsEnabled:', smsEnabled);
+    const newValue = !smsEnabled;
+    dispatch(setSmsEnabled(newValue));
+    if (newValue) {
+      showAlert("SMS Enabled", "SMS capture is now active. Transaction messages will be automatically processed.");
     } else {
-      // Show consent modal
-      setSmsConsentModalVisible(true);
+      showAlert("SMS Disabled", "SMS capture has been turned off.");
     }
   };
 
-  const handleSmsConsent = async () => {
-    setSmsConsentModalVisible(false);
-    try {
-      const hasPermission = await requestSMSPermissions();
-      if (hasPermission) {
-        dispatch(setSmsEnabled(true));
-        showAlert("SMS Enabled", "SMS capture is now active. Transaction messages will be automatically processed.");
-      } else {
-        showAlert("Permission Denied", "SMS permission is required to enable SMS capture.");
-      }
-    } catch (error) {
-      showAlert("Error", "Failed to request SMS permissions.");
-    }
-  };
-
-  const handleSmsDeny = () => {
-    setSmsConsentModalVisible(false);
-  };
 
   const handleSignOut = () => {
     handleLogout();
@@ -606,8 +594,17 @@ export default function Settings() {
           label="SMS Capture"
           value={smsEnabled ? "Enabled" : "Disabled"}
           onPress={handleSmsToggle}
-          marginBottom={40}
         />
+
+        {smsEnabled && (
+          <SettingOption
+            icon="add-circle-outline"
+            label="Add SMS Manually"
+            value=""
+            onPress={() => setManualSMSModalVisible(true)}
+            marginBottom={40}
+          />
+        )}
 
         {/* Daily Target Modal */}
         <Modal
@@ -691,11 +688,10 @@ export default function Settings() {
           </View>
         </Modal>
 
-        {/* SMS Consent Modal */}
-        <SMSConsentModal
-          visible={smsConsentModalVisible}
-          onConsent={handleSmsConsent}
-          onDeny={handleSmsDeny}
+        {/* Manual SMS Modal */}
+        <ManualSMSModal
+          visible={manualSMSModalVisible}
+          onClose={() => setManualSMSModalVisible(false)}
         />
 
         {/* Alert Modal */}

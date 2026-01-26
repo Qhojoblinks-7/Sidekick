@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeContext } from '../contexts/ThemeContext';
 
-export const TransactionItem = ({ platform, amount, time, type, status, onPress, onLongPress }) => {
+export const TransactionItem = ({ platform, amount, time, type, status, onPress, onLongPress, isSelectMode, isSelected, onSelect }) => {
   const { colors } = useContext(ThemeContext);
   const isExpense = type === 'expense';
   const isDebt = type === 'debt';
@@ -72,6 +72,9 @@ export const TransactionItem = ({ platform, amount, time, type, status, onPress,
       height: 28,
       borderRadius: 14,
     },
+    checkboxContainer: {
+      marginRight: 12,
+    },
     platform: {
       fontWeight: '900',
       fontSize: 12,
@@ -108,6 +111,11 @@ export const TransactionItem = ({ platform, amount, time, type, status, onPress,
   return (
     <Container style={styles.container} onPress={onPress} onLongPress={onLongPress}>
       <View style={styles.leftSection}>
+        {isSelectMode && (
+          <TouchableOpacity onPress={onSelect} style={styles.checkboxContainer}>
+            <Ionicons name={isSelected ? "checkbox" : "square-outline"} size={24} color={colors.textMain} />
+          </TouchableOpacity>
+        )}
         <View style={styles.iconContainer}>
           {getIcon()}
         </View>

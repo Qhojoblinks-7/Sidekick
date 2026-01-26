@@ -68,7 +68,7 @@ const dataSlice = createSlice({
 });
 
 export const { setOnline, setSyncing, setLastSyncTime } = uiSlice.actions;
-export const { setDailyTarget, setVehicleType, setSmsEnabled } = settingsSlice.actions;
+export const { setDailyTarget, setVehicleType, setSmsEnabled, loadSettings } = settingsSlice.actions;
 export const {
   setSummary,
   setTransactions,
@@ -79,7 +79,6 @@ export const {
   removeExpense,
   updateTransaction,
   updateExpense,
-  loadSettings,
   updatePlatformDebt
 } = dataSlice.actions;
 

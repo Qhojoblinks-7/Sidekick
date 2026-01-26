@@ -4,6 +4,7 @@ from .models import Transaction, Expense
 
 class TransactionSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField()
 
     def get_status(self, obj):
         if obj.rider_profit > 50:
@@ -20,6 +21,7 @@ class TransactionSerializer(serializers.ModelSerializer):
 
 class ExpenseSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField()
 
     def get_status(self, obj):
         return 'Expense'

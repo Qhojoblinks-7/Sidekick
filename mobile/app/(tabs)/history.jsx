@@ -46,6 +46,9 @@ export default function History() {
   
   const [expenseDescription, setExpenseDescription] = useState("");
 
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState([]);
+
   // Transform and combine data from Redux store
   const allTransactions = useMemo(() => {
     // Transform transactions
@@ -142,6 +145,29 @@ export default function History() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedItems.length === 0) return;
+    try {
+      for (const id of selectedItems) {
+        const isExpense = id.startsWith('exp-');
+        const endpoint = isExpense ? '/api/expenses/' : '/api/transactions/';
+        const realId = id.replace(isExpense ? 'exp-' : 'tx-', '');
+        await apiCall(`${endpoint}${realId}/`, { method: 'DELETE' });
+        if (isExpense) {
+          dispatch(removeExpense(parseInt(realId)));
+        } else {
+          dispatch(removeTransaction(parseInt(realId)));
+        }
+      }
+      Alert.alert('Success', 'Selected items deleted successfully');
+      setSelectedItems([]);
+      setIsSelectMode(false);
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      Alert.alert('Error', 'Failed to delete some items');
+    }
+  };
+
   const saveExpense = () => {
     const value = parseFloat(expenseAmount);
     if (isNaN(value) || value <= 0) {
@@ -177,6 +203,26 @@ export default function History() {
       paddingTop: 24,
       paddingBottom: 16,
       marginBottom: 32,
+    },
+    headerContent: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    headerText: {
+      flex: 1,
+    },
+    selectButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+    },
+    selectButtonText: {
+      color: colors.textSecondary,
+      fontWeight: 'bold',
     },
     scroll: {
       paddingHorizontal: 16,
@@ -250,6 +296,27 @@ export default function History() {
     },
     filterButtonTextActive: {
       color: colors.textMain,
+    },
+    bulkActions: {
+      paddingHorizontal: 16,
+      marginBottom: 16,
+    },
+    deleteButton: {
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      backgroundColor: colors.expense,
+      alignItems: 'center',
+    },
+    deleteButtonDisabled: {
+      backgroundColor: colors.border,
+    },
+    deleteButtonText: {
+      color: colors.textMain,
+      fontWeight: 'bold',
+    },
+    deleteButtonTextDisabled: {
+      color: colors.textMuted,
     },
     modalOverlay: {
       flex: 1,
@@ -326,11 +393,26 @@ export default function History() {
     <SafeAreaView style={styles.container}>
       {/* Page Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Transactions Feed</Text>
-        <Text style={styles.subtitle}>
-          Your personal bank statement. Every MoMo message processed shows up
-          here.
-        </Text>
+        <View style={styles.headerContent}>
+          <View style={styles.headerText}>
+            <Text style={styles.title}>Transactions Feed</Text>
+            <Text style={styles.subtitle}>
+              Your personal bank statement. Every MoMo message processed shows up
+              here.
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.selectButton}
+            onPress={() => {
+              setIsSelectMode(!isSelectMode);
+              setSelectedItems([]);
+            }}
+          >
+            <Text style={styles.selectButtonText}>
+              {isSelectMode ? 'Cancel' : 'Select'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Filter Buttons */}
@@ -355,6 +437,21 @@ export default function History() {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Bulk Actions */}
+      {isSelectMode && (
+        <View style={styles.bulkActions}>
+          <TouchableOpacity
+            style={[styles.deleteButton, selectedItems.length === 0 && styles.deleteButtonDisabled]}
+            onPress={handleBulkDelete}
+            disabled={selectedItems.length === 0}
+          >
+            <Text style={[styles.deleteButtonText, selectedItems.length === 0 && styles.deleteButtonTextDisabled]}>
+              Delete Selected ({selectedItems.length})
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* The Feed */}
       <FlatList
@@ -388,6 +485,15 @@ export default function History() {
               }
             }}
             onLongPress={() => handleDelete(item)}
+            isSelectMode={isSelectMode}
+            isSelected={selectedItems.includes(item.id)}
+            onSelect={() => {
+              if (selectedItems.includes(item.id)) {
+                setSelectedItems(selectedItems.filter(id => id !== item.id));
+              } else {
+                setSelectedItems([...selectedItems, item.id]);
+              }
+            }}
           />
         )}
         ListFooterComponent={

@@ -4,6 +4,7 @@ import axios from 'axios';
 
 // Function to request SMS permissions
 export const requestSMSPermissions = async () => {
+  console.log('About to request SMS permission');
   try {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.READ_SMS,
@@ -15,9 +16,10 @@ export const requestSMSPermissions = async () => {
         buttonPositive: 'OK',
       },
     );
+    console.log('Permission granted result:', granted);
     return granted === PermissionsAndroid.RESULTS.GRANTED;
   } catch (err) {
-    console.warn(err);
+    console.warn('Error in requestSMSPermissions:', err);
     return false;
   }
 };
@@ -68,7 +70,7 @@ export const sendSMSToBridge = async (message) => {
 };
 
 // Function to check if an SMS is a MoMo transaction message
-const isMoMoTransactionSMS = (sms) => {
+export const isMoMoTransactionSMS = (sms) => {
   const body = sms.body.toLowerCase();
   // Check for presence of GHS (Ghana Cedis) and transaction keywords
   const hasAmount = body.includes('ghs');

@@ -8,7 +8,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         fields = ['id', 'username', 'tx_id', 'amount_received', 'rider_profit', 'platform_debt', 'platform', 'is_tip', 'created_at']
-        read_only_fields = ['user', 'created_at']
+        read_only_fields = ['user']
 
     def create(self, validated_data):
         # Automatically assign user from request if not already set
@@ -23,7 +23,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expense
         fields = ['id', 'username', 'amount', 'category', 'description', 'created_at']
-        read_only_fields = ['user', 'created_at']
+        read_only_fields = ['user']
 
     def create(self, validated_data):
         # Automatically assign user from request
