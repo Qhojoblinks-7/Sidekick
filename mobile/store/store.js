@@ -77,6 +77,9 @@ export const {
   addExpense,
   removeTransaction,
   removeExpense,
+  updateTransaction,
+  updateExpense,
+  loadSettings,
   updatePlatformDebt
 } = dataSlice.actions;
 
