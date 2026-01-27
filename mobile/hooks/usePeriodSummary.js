@@ -1,31 +1,17 @@
-import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { apiCall } from '../services/apiService';
 
-const usePeriodSummary = (filteredTransactions, summary, period) => {
-  return useMemo(() => {
-    const yangoIncome = filteredTransactions
-      .filter(tx => tx.platform === 'YANGO')
-      .reduce((sum, tx) => sum + parseFloat(tx.rider_profit || 0), 0);
-    const boltIncome = filteredTransactions
-      .filter(tx => tx.platform === 'BOLT')
-      .reduce((sum, tx) => sum + parseFloat(tx.rider_profit || 0), 0);
-    const yangoDebt = filteredTransactions
-      .filter(tx => tx.platform === 'YANGO')
-      .reduce((sum, tx) => sum + parseFloat(tx.platform_debt || 0), 0);
-    const boltDebt = filteredTransactions
-      .filter(tx => tx.platform === 'BOLT')
-      .reduce((sum, tx) => sum + parseFloat(tx.platform_debt || 0), 0);
-    const netProfit = yangoIncome + boltIncome;
-    const totalDebt = yangoDebt + boltDebt;
-    return {
-      yango_income: yangoIncome,
-      bolt_income: boltIncome,
-      expenses: summary.expenses,
-      yango_debt: yangoDebt,
-      bolt_debt: boltDebt,
-      net_profit: netProfit,
-      total_debt: totalDebt,
-    };
-  }, [filteredTransactions, summary.expenses, period]);
+const usePeriodSummary = (period) => {
+  return useQuery({
+    queryKey: ['periodSummary', period.startDate.toISOString(), period.endDate.toISOString()],
+    queryFn: async () => {
+      const response = await apiCall(`/api/summary/period/?start_date=${period.startDate.toISOString()}&end_date=${period.endDate.toISOString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch period summary');
+      }
+      return response.json();
+    },
+  });
 };
 
 export default usePeriodSummary;

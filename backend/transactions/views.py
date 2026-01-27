@@ -7,7 +7,7 @@ from django.db.models import Sum
 from django.contrib.auth.models import User
 from .models import Transaction, Expense
 from .serializers import TransactionSerializer, ExpenseSerializer
-from datetime import date
+from datetime import date, datetime
 
 logger = logging.getLogger(__name__)
 
@@ -97,3 +97,62 @@ class DailySummaryView(APIView):
                 "expenses": float(total_expenses),
             }
         )
+
+
+class PeriodSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        if not start_date or not end_date:
+            return Response({'error': 'start_date and end_date are required'}, status=400)
+
+        try:
+            start = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+            end = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        except ValueError:
+            return Response({'error': 'Invalid date format'}, status=400)
+
+        # Calculate Total Profit from Trips
+        total_profit = (
+            Transaction.objects.filter(user=request.user, created_at__range=(start, end)).aggregate(
+                Sum("rider_profit")
+            )["rider_profit__sum"]
+            or 0
+        )
+
+        # Calculate Total Expenses
+        total_expenses = (
+            Expense.objects.filter(user=request.user, created_at__range=(start, end)).aggregate(Sum("amount"))[
+                "amount__sum"
+            ]
+            or 0
+        )
+
+        # Calculate Total Debt
+        total_debt = (
+            Transaction.objects.filter(user=request.user, created_at__range=(start, end)).aggregate(
+                Sum("platform_debt")
+            )["platform_debt__sum"]
+            or 0
+        )
+
+        # Calculate incomes per platform
+        yango_income = Transaction.objects.filter(user=request.user, platform='YANGO', created_at__range=(start, end)).aggregate(Sum("rider_profit"))["rider_profit__sum"] or 0
+        bolt_income = Transaction.objects.filter(user=request.user, platform='BOLT', created_at__range=(start, end)).aggregate(Sum("rider_profit"))["rider_profit__sum"] or 0
+
+        # Calculate debts per platform
+        yango_debt = Transaction.objects.filter(user=request.user, platform='YANGO', created_at__range=(start, end)).aggregate(Sum("platform_debt"))["platform_debt__sum"] or 0
+        bolt_debt = Transaction.objects.filter(user=request.user, platform='BOLT', created_at__range=(start, end)).aggregate(Sum("platform_debt"))["platform_debt__sum"] or 0
+
+        return Response({
+            "yango_income": float(yango_income),
+            "bolt_income": float(bolt_income),
+            "expenses": float(total_expenses),
+            "yango_debt": float(yango_debt),
+            "bolt_debt": float(bolt_debt),
+            "net_profit": float(total_profit - total_expenses),
+            "total_debt": float(total_debt),
+        })

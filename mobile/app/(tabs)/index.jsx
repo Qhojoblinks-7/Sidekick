@@ -163,7 +163,16 @@ export default function Dashboard() {
     transactionsData,
     period,
   );
-  const periodSummary = usePeriodSummary(filteredTransactions, summary, period);
+  const { data: periodSummary } = usePeriodSummary(period);
+  const summaryData = periodSummary || {
+    yango_income: 0,
+    bolt_income: 0,
+    expenses: 0,
+    yango_debt: 0,
+    bolt_debt: 0,
+    net_profit: 0,
+    total_debt: 0,
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -322,13 +331,13 @@ export default function Dashboard() {
       />
 
       <GoalProgressBar
-        current={periodSummary.net_profit}
+        current={summaryData.net_profit}
         target={dailyTarget}
       />
 
       <ScrollView style={styles.cardsScroll}>
         <DashboardCards
-          periodSummary={periodSummary}
+          periodSummary={summaryData}
           dailyTarget={dailyTarget}
         />
       </ScrollView>
