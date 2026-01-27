@@ -1,0 +1,85 @@
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/checksums/checksums.lock b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/checksums/checksums.lock
+new file mode 100644
+index 0000000..f08aeec
+Binary files /dev/null and b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/checksums/checksums.lock differ
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/checksums/md5-checksums.bin b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/checksums/md5-checksums.bin
+new file mode 100644
+index 0000000..42c877a
+Binary files /dev/null and b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/checksums/md5-checksums.bin differ
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/checksums/sha1-checksums.bin b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/checksums/sha1-checksums.bin
+new file mode 100644
+index 0000000..0aab69f
+Binary files /dev/null and b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/checksums/sha1-checksums.bin differ
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/dependencies-accessors/dependencies-accessors.lock b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/dependencies-accessors/dependencies-accessors.lock
+new file mode 100644
+index 0000000..e778690
+Binary files /dev/null and b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/dependencies-accessors/dependencies-accessors.lock differ
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/dependencies-accessors/gc.properties b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/dependencies-accessors/gc.properties
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/fileChanges/last-build.bin b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/fileChanges/last-build.bin
+new file mode 100644
+index 0000000..f76dd23
+Binary files /dev/null and b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/fileChanges/last-build.bin differ
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/fileHashes/fileHashes.bin b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/fileHashes/fileHashes.bin
+new file mode 100644
+index 0000000..058d09d
+Binary files /dev/null and b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/fileHashes/fileHashes.bin differ
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/fileHashes/fileHashes.lock b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/fileHashes/fileHashes.lock
+new file mode 100644
+index 0000000..a1fcebf
+Binary files /dev/null and b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/fileHashes/fileHashes.lock differ
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/fileHashes/resourceHashesCache.bin b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/fileHashes/resourceHashesCache.bin
+new file mode 100644
+index 0000000..dabeb0e
+Binary files /dev/null and b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/fileHashes/resourceHashesCache.bin differ
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/gc.properties b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/8.0/gc.properties
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/buildOutputCleanup/buildOutputCleanup.lock b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/buildOutputCleanup/buildOutputCleanup.lock
+new file mode 100644
+index 0000000..c3ffd66
+Binary files /dev/null and b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/buildOutputCleanup/buildOutputCleanup.lock differ
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/buildOutputCleanup/cache.properties b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/buildOutputCleanup/cache.properties
+new file mode 100644
+index 0000000..047df72
+--- /dev/null
++++ b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/buildOutputCleanup/cache.properties
+@@ -0,0 +1,2 @@
++#Tue Jan 27 09:11:31 GMT 2026
++gradle.version=8.0
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/buildOutputCleanup/outputFiles.bin b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/buildOutputCleanup/outputFiles.bin
+new file mode 100644
+index 0000000..918503f
+Binary files /dev/null and b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/buildOutputCleanup/outputFiles.bin differ
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/nb-cache/android-1126331612/project-info.ser b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/nb-cache/android-1126331612/project-info.ser
+new file mode 100644
+index 0000000..8a9c914
+Binary files /dev/null and b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/nb-cache/android-1126331612/project-info.ser differ
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/nb-cache/subprojects.ser b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/nb-cache/subprojects.ser
+new file mode 100644
+index 0000000..426bbae
+Binary files /dev/null and b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/nb-cache/subprojects.ser differ
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/nb-cache/trust/9C1222F473BDAFAD9FFD366C85940A3F80CCE8E0EEBB9DF0EA639AFEF500E520 b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/nb-cache/trust/9C1222F473BDAFAD9FFD366C85940A3F80CCE8E0EEBB9DF0EA639AFEF500E520
+new file mode 100644
+index 0000000..9528933
+--- /dev/null
++++ b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/nb-cache/trust/9C1222F473BDAFAD9FFD366C85940A3F80CCE8E0EEBB9DF0EA639AFEF500E520
+@@ -0,0 +1 @@
++6BB501EA380A5BA60C661A7762CB125383AE187CBFC0AAFC3EBEFDE3FE11A394
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/vcs-1/gc.properties b/node_modules/@maniac-tech/react-native-expo-read-sms/android/.gradle/vcs-1/gc.properties
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java b/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java
+index f78f1fe..2141492 100644
+--- a/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java
++++ b/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java
+@@ -7,7 +7,7 @@ import android.content.Context;
+ import android.content.Intent;
+ import android.content.IntentFilter;
+ import android.content.pm.PackageManager;
+-import android.os.Bundle;
++import android.os.Build;`nimport android.os.Bundle;
+ import android.telephony.SmsMessage;
+ import android.util.Log;
+ 
