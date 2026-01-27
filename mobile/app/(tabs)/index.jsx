@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useQueryClient } from "@tanstack/react-query";
+import { setSyncing, addTransaction as addTransactionAction } from "../../store/store";
+import { apiCall } from "../../services/apiService";
+import { parseIncomingMoMo } from "../../utils/momoTracker";
 import {
   ScrollView,
   View,
@@ -27,12 +30,12 @@ import useFilteredTransactions from "../../hooks/useFilteredTransactions";
 import usePeriodSummary from "../../hooks/usePeriodSummary";
 import { startLiveTracking, syncMissedTrips } from "../../services/smsService";
 import io from "socket.io-client";
-import { useSelector } from "react-redux";
 
 export default function Dashboard() {
   const { colors } = useContext(ThemeContext);
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
   const { summary, transactions: transactionsData } = useSelector(
     (state) => state.data,
   );
@@ -72,6 +75,27 @@ export default function Dashboard() {
     setGrossTotal("");
     setFieldStep(0);
   };
+
+  const addTransaction = async (transactionData, options = {}) => {
+    try {
+      const response = await apiCall('/api/transactions/', {
+        method: 'POST',
+        body: JSON.stringify(transactionData),
+      });
+      if (response.ok) {
+        const newTransaction = await response.json();
+        dispatch(addTransactionAction(newTransaction));
+        if (options.onSuccess) options.onSuccess();
+      } else {
+        console.error('Failed to add transaction');
+        if (options.onError) options.onError();
+      }
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+      if (options.onError) options.onError(error);
+    }
+  };
+
   const modalVisible = currentStep === 1 || currentStep === 2;
   const getModalTitle = () => {
     switch (currentStep) {
@@ -157,7 +181,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // 1. Run the Scanner once on startup
-    setIsSyncing(true);
+    dispatch(setSyncing(true));
     syncMissedTrips(null, (trips) => { // Assuming lastKnownTripId is null for now
       if (trips.length > 0) {
         trips.forEach((trip) => {
@@ -179,7 +203,7 @@ export default function Dashboard() {
           );
         });
       }
-      setIsSyncing(false);
+      dispatch(setSyncing(false));
     });
 
     // 2. Start the Live Listener
