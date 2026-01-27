@@ -15,7 +15,6 @@ import { Button } from "../../components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeContext } from "../../contexts/ThemeContext";
 import { apiCall } from "../../services/apiService";
-import ManualSMSModal from "../../components/ManualSMSModal";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "expo-router";
 import {
@@ -46,8 +45,6 @@ export default function Settings() {
   );
   const { summary, transactions } = useSelector((state) => state.data);
 
-  console.log('Settings component rendered, smsEnabled:', smsEnabled);
-
   // Calculate rider stats
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
@@ -69,7 +66,6 @@ export default function Settings() {
   // Modal states
   const [targetModalVisible, setTargetModalVisible] = useState(false);
   const [vehicleModalVisible, setVehicleModalVisible] = useState(false);
-  const [manualSMSModalVisible, setManualSMSModalVisible] = useState(false);
   const [alertModalVisible, setAlertModalVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
@@ -596,16 +592,6 @@ export default function Settings() {
           onPress={handleSmsToggle}
         />
 
-        {smsEnabled && (
-          <SettingOption
-            icon="add-circle-outline"
-            label="Add SMS Manually"
-            value=""
-            onPress={() => setManualSMSModalVisible(true)}
-            marginBottom={40}
-          />
-        )}
-
         {/* Daily Target Modal */}
         <Modal
           visible={targetModalVisible}
@@ -687,12 +673,6 @@ export default function Settings() {
             </View>
           </View>
         </Modal>
-
-        {/* Manual SMS Modal */}
-        <ManualSMSModal
-          visible={manualSMSModalVisible}
-          onClose={() => setManualSMSModalVisible(false)}
-        />
 
         {/* Alert Modal */}
         <Modal

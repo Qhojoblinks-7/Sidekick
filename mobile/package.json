@@ -1,7 +1,6 @@
 {
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
-    "@maniac-tech/react-native-expo-read-sms": "^9.0.2-alpha",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "^8.4.4",
     "@reduxjs/toolkit": "^2.11.2",
@@ -49,8 +48,8 @@
   "name": "mobile",
   "private": true,
   "scripts": {
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "start": "expo start",
     "web": "expo start --web",
     "postinstall": "patch-package"

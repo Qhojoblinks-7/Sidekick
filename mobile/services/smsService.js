@@ -1,6 +1,7 @@
-import { PermissionsAndroid } from 'react-native';
+import { PermissionsAndroid, DeviceEventEmitter } from 'react-native';
 import SmsAndroid from 'react-native-get-sms-android';
-import axios from 'axios';
+import { parseMoMoSMS } from '../utils/momoTracker';
+import { apiCall } from './apiService';
 
 // Function to request SMS permissions
 export const requestSMSPermissions = async () => {
@@ -39,7 +40,7 @@ export const readSMS = async (hasConsent = true) => {
       SmsAndroid.list(
         JSON.stringify({
           box: 'inbox',
-          maxCount: 10, // Read last 10 SMS
+          maxCount: 50, // Read last 50 SMS
         }),
         (fail) => {
           reject(new Error(fail));
@@ -58,13 +59,16 @@ export const readSMS = async (hasConsent = true) => {
   }
 };
 
-// Function to send SMS to bridge
-export const sendSMSToBridge = async (message) => {
+// Function to send parsed SMS data to backend API
+export const sendParsedSMSToAPI = async (parsedData) => {
   try {
-    const response = await axios.post('http://localhost:3001/sms', { message });
-    return response.data;
+    const response = await apiCall('/api/transactions/', {
+      method: 'POST',
+      body: JSON.stringify(parsedData),
+    });
+    return response;
   } catch (error) {
-    console.error('Error sending SMS to bridge:', error);
+    console.error('Error sending parsed SMS to API:', error);
     throw error;
   }
 };
@@ -87,15 +91,65 @@ export const filterMoMoSMS = (smsList) => {
   return smsList.filter(isMoMoTransactionSMS);
 };
 
-// Function to read and process SMS (read and send relevant to bridge)
+// Function to read and process SMS (read, parse, and send to API)
 export const readAndProcessSMS = async (hasConsent = true) => {
   try {
     const smsList = await readSMS(hasConsent);
     const filteredSMS = filterMoMoSMS(smsList);
     for (const sms of filteredSMS) {
-      await sendSMSToBridge(sms.body);
+      const parsed = parseMoMoSMS(sms.body);
+      if (parsed) {
+        await sendParsedSMSToAPI(parsed);
+      }
     }
   } catch (error) {
     console.error('Error processing SMS:', error);
+  }
+};
+
+// Live tracking listener
+export const startLiveTracking = (onNewTrip) => {
+  // Listen for the broadcast from the native side
+  const subscription = DeviceEventEmitter.addListener('onSMSReceived', async (data) => {
+    const message = JSON.parse(data);
+    const parsed = parseMoMoSMS(message.messageBody);
+
+    if (parsed) {
+      // Send to API and notify
+      try {
+        await sendParsedSMSToAPI(parsed);
+        onNewTrip(parsed);
+      } catch (error) {
+        console.error('Error processing live SMS:', error);
+      }
+    }
+  });
+
+  return () => subscription.remove();
+};
+
+// Scanner for missed trips
+export const syncMissedTrips = async (lastKnownTripId, onSyncComplete) => {
+  try {
+    const smsList = await readSMS(true);
+    const newTrips = [];
+
+    for (const sms of smsList) {
+      const parsed = parseMoMoSMS(sms.body);
+      // Only add if it's a valid transaction and not already in our DB
+      if (parsed && parsed.tx_id !== lastKnownTripId) {
+        try {
+          await sendParsedSMSToAPI(parsed);
+          newTrips.push(parsed);
+        } catch (error) {
+          console.error('Error sending missed trip to API:', error);
+        }
+      }
+    }
+
+    onSyncComplete(newTrips);
+  } catch (error) {
+    console.error('Error syncing missed trips:', error);
+    onSyncComplete([]);
   }
 };

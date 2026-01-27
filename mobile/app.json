@@ -10,8 +10,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "6f31909f-949b-4db0-a5e6-05facf042e17"
-      }
+        "projectId": "9ed58529-e307-4cd6-968f-189c90e257fa"
+      },
+      "router": {}
     },
     "icon": "./assets/brand-icon.png",
     "ios": {

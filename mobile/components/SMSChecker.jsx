@@ -11,7 +11,8 @@ const SMSChecker = () => {
 
   const checkSMS = async () => {
     if (smsEnabled && isAuthenticated) {
-      console.log('Manual SMS entry is available. Automatic SMS processing is skipped due to Expo managed workflow limitations.');
+      console.log('Checking for new SMS transactions...');
+      await readAndProcessSMS(true);
     }
   };
 

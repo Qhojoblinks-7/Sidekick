@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -24,18 +25,19 @@ import CustomDateModal from "../../components/CustomDateModal";
 import useDashboardData from "../../hooks/useDashboardData";
 import useFilteredTransactions from "../../hooks/useFilteredTransactions";
 import usePeriodSummary from "../../hooks/usePeriodSummary";
-import { useAddTransaction } from "../../hooks/useTransactions";
+import { startLiveTracking, syncMissedTrips } from "../../services/smsService";
 import io from "socket.io-client";
+import { useSelector } from "react-redux";
 
 export default function Dashboard() {
   const { colors } = useContext(ThemeContext);
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  const { mutate: addTransaction, isPending: isAdding } = useAddTransaction();
   const { summary, transactions: transactionsData } = useSelector(
     (state) => state.data,
   );
   const { dailyTarget } = useSelector((state) => state.settings);
+  const { isSyncing } = useSelector((state) => state.ui);
 
   const getInitialPeriod = () => {
     const now = new Date();
@@ -152,6 +154,57 @@ export default function Dashboard() {
     });
     return () => socket.disconnect();
   }, [queryClient]);
+
+  useEffect(() => {
+    // 1. Run the Scanner once on startup
+    setIsSyncing(true);
+    syncMissedTrips(null, (trips) => { // Assuming lastKnownTripId is null for now
+      if (trips.length > 0) {
+        trips.forEach((trip) => {
+          addTransaction(
+            {
+              tx_id: trip.transactionId,
+              amount_received: trip.amount,
+              rider_profit: trip.amount,
+              platform_debt: 0,
+              platform: trip.source === 'Bolt Food' ? 'BOLT' : 'YANGO',
+              is_tip: false,
+              created_at: new Date().toISOString(),
+            },
+            {
+              onSuccess: () => {
+                showToast(`Synced missed payment: GHS ${trip.amount} from ${trip.source}`, "success");
+              },
+            },
+          );
+        });
+      }
+      setIsSyncing(false);
+    });
+
+    // 2. Start the Live Listener
+    const stopListening = startLiveTracking((trip) => {
+      addTransaction(
+        {
+          tx_id: trip.transactionId,
+          amount_received: trip.amount,
+          rider_profit: trip.amount,
+          platform_debt: 0,
+          platform: trip.source === 'Bolt Food' ? 'BOLT' : 'YANGO',
+          is_tip: false,
+          created_at: new Date().toISOString(),
+        },
+        {
+          onSuccess: () => {
+            showToast(`New ${trip.source} Payment: GHS ${trip.amount}`, "success");
+            Vibration.vibrate();
+          },
+        },
+      );
+    });
+
+    return () => stopListening();
+  }, []);
   useEffect(() => {
     if (currentStep === 3) {
       setTransactionDateModalVisible(true);
@@ -336,6 +389,44 @@ export default function Dashboard() {
         target={dailyTarget}
       />
 
+      <View style={{ paddingHorizontal: 16, marginTop: 10 }}>
+        <TouchableOpacity
+          style={{
+            backgroundColor: colors.profit,
+            paddingVertical: 12,
+            paddingHorizontal: 20,
+            borderRadius: 12,
+            alignItems: 'center',
+          }}
+          onPress={() => {
+            const sampleSMS = "Payment received for GHS 45.00 from 0244000111. Ref: Bolt Food Order 123. Transaction ID: 98765432.";
+            const parsed = parseIncomingMoMo(sampleSMS);
+            if (parsed) {
+              addTransaction(
+                {
+                  tx_id: parsed.transactionId,
+                  amount_received: parsed.amount,
+                  rider_profit: parsed.amount,
+                  platform_debt: 0,
+                  platform: parsed.source === 'Bolt Food' ? 'BOLT' : 'YANGO',
+                  is_tip: false,
+                  created_at: new Date().toISOString(),
+                },
+                {
+                  onSuccess: () => {
+                    showToast(`MoMo payment captured: GHS ${parsed.amount} from ${parsed.source}`, "success");
+                  },
+                },
+              );
+            } else {
+              showToast("Failed to parse MoMo SMS", "error");
+            }
+          }}
+        >
+          <Text style={{ color: colors.textMain, fontWeight: 'bold' }}>Test MoMo Capture</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView style={styles.cardsScroll}>
         <DashboardCards
           periodSummary={summaryData}
@@ -498,6 +589,47 @@ export default function Dashboard() {
         setCustomDate={setTransactionDate}
         setSelectedPeriod={handleDateSelect}
       />
+
+      {/* Syncing Modal */}
+      <Modal
+        visible={isSyncing}
+        transparent={true}
+        animationType="fade"
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          <View style={{
+            backgroundColor: colors.card,
+            borderRadius: 20,
+            padding: 24,
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}>
+            <ActivityIndicator size="large" color={colors.profit} />
+            <Text style={{
+              color: colors.textMain,
+              fontSize: 18,
+              fontWeight: 'bold',
+              marginTop: 16,
+            }}>
+              Syncing Messages...
+            </Text>
+            <Text style={{
+              color: colors.textMuted,
+              fontSize: 14,
+              textAlign: 'center',
+              marginTop: 8,
+            }}>
+              Checking for missed payments
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
