@@ -96,7 +96,8 @@ export default function Dashboard() {
       resetTransactionStates();
     }
   };
-  const handleDateSelect = (date) => {
+  const handleDateSelect = (selectedPeriod) => {
+    const date = selectedPeriod.startDate;
     setTransactionDate(date);
     let riderProfit, platformDebt, isTip = false, amtReceived;
     if (manualPlatform === "YANGO") {
@@ -494,8 +495,8 @@ export default function Dashboard() {
         customDateModalVisible={transactionDateModalVisible}
         setCustomDateModalVisible={closeDateModal}
         customDate={transactionDate}
-        setCustomDate={handleDateSelect}
-        setSelectedPeriod={() => {}}
+        setCustomDate={setTransactionDate}
+        setSelectedPeriod={handleDateSelect}
       />
     </SafeAreaView>
   );

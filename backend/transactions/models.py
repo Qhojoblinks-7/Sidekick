@@ -30,7 +30,7 @@ class Transaction(models.Model):
     )
     is_tip = models.BooleanField(default=False)
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField()
 
     def __str__(self):
         return f"{self.user.username} - {self.platform} - GHS {self.amount_received} ({self.tx_id})"
@@ -51,7 +51,7 @@ class Expense(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.CharField(max_length=10, choices=CATEGORY_CHOICES)
     description = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField()
 
     def __str__(self):
         return f"{self.user.username} - {self.category} - GHS {self.amount}"
