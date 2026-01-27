@@ -2,7 +2,9 @@
   "expo": {
     "android": {
       "package": "com.sidekick.deliverytracker",
+      "minSdkVersion": 34,
       "permissions": [
+        "RECEIVE_SMS",
         "READ_SMS"
       ]
     },
@@ -22,7 +24,8 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      "expo-dev-client"
     ],
     "scheme": "sidekick",
     "slug": "sidekick",
