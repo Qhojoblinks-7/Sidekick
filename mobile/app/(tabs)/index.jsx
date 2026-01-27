@@ -37,54 +37,88 @@ export default function Dashboard() {
   );
   const { dailyTarget } = useSelector((state) => state.settings);
 
+  const getInitialPeriod = () => {
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    return { type: "today", startDate, endDate };
+  };
+
   const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState("today");
+  const [period, setPeriod] = useState(getInitialPeriod());
   const [customDateModalVisible, setCustomDateModalVisible] = useState(false);
   const [customDate, setCustomDate] = useState(new Date());
   const [currentStep, setCurrentStep] = useState(0);
+  const [fieldStep, setFieldStep] = useState(0);
   const [manualAmount, setManualAmount] = useState("");
   const [amountReceived, setAmountReceived] = useState("");
   const [manualPlatform, setManualPlatform] = useState("YANGO");
   const [transactionDate, setTransactionDate] = useState(new Date());
   const [transactionDateModalVisible, setTransactionDateModalVisible] = useState(false);
+  const [tripPrice, setTripPrice] = useState("");
+  const [bonuses, setBonuses] = useState("");
+  const [systemFees, setSystemFees] = useState("");
+  const [grossTotal, setGrossTotal] = useState("");
   const resetTransactionStates = () => {
     setManualAmount("");
     setAmountReceived("");
     setManualPlatform("YANGO");
     setTransactionDate(new Date());
+    setTripPrice("");
+    setBonuses("");
+    setSystemFees("");
+    setGrossTotal("");
+    setFieldStep(0);
   };
-  const modalVisible = currentStep > 0 && currentStep < 4;
+  const modalVisible = currentStep === 1 || currentStep === 2;
   const getModalTitle = () => {
     switch (currentStep) {
-      case 1: return "Enter Full Fee";
-      case 2: return "Enter Amount Received";
-      case 3: return "Select Platform";
+      case 1: return "Select Platform";
+      case 2: {
+        const fields = manualPlatform === "YANGO" ? [
+          { label: 'Trip Price' },
+          { label: 'Bonuses' },
+          { label: 'System Fees' },
+          { label: 'Gross Total' },
+        ] : [
+          { label: 'Full Fee' },
+          { label: 'Amount Received' },
+        ];
+        return `Enter ${fields[fieldStep]?.label}`;
+      }
       default: return "Add Manual Transaction";
     }
   };
   const closeDateModal = () => {
     setTransactionDateModalVisible(false);
-    if (currentStep === 4) {
+    if (currentStep === 3) {
       setCurrentStep(0);
       resetTransactionStates();
     }
   };
   const handleDateSelect = (date) => {
     setTransactionDate(date);
-    const fullFee = parseFloat(manualAmount);
-    const amtReceived = parseFloat(amountReceived);
-    if (isNaN(fullFee) || fullFee <= 0 || isNaN(amtReceived) || amtReceived <= 0) {
-      Alert.alert("Invalid Amounts", "Please enter valid amounts.");
-      return;
-    }
-    let riderProfit, platformDebt, isTip = false;
-    if (fullFee <= amtReceived) {
-      riderProfit = fullFee;
-      platformDebt = amtReceived - fullFee;
+    let riderProfit, platformDebt, isTip = false, amtReceived;
+    if (manualPlatform === "YANGO") {
+      const tp = parseFloat(tripPrice);
+      const b = parseFloat(bonuses || 0);
+      const sf = parseFloat(systemFees || 0);
+      const gt = parseFloat(grossTotal);
+      riderProfit = tp + b - sf;
+      amtReceived = gt;
+      platformDebt = amtReceived - riderProfit;
+      isTip = riderProfit < amtReceived;
     } else {
-      riderProfit = amtReceived;
-      platformDebt = 0;
-      isTip = true;
+      const fullFee = parseFloat(manualAmount);
+      amtReceived = parseFloat(amountReceived);
+      if (fullFee <= amtReceived) {
+        riderProfit = fullFee;
+        platformDebt = amtReceived - fullFee;
+      } else {
+        riderProfit = amtReceived;
+        platformDebt = 0;
+        isTip = true;
+      }
     }
     addTransaction(
       {
@@ -118,7 +152,7 @@ export default function Dashboard() {
     return () => socket.disconnect();
   }, [queryClient]);
   useEffect(() => {
-    if (currentStep === 4) {
+    if (currentStep === 3) {
       setTransactionDateModalVisible(true);
     } else {
       setTransactionDateModalVisible(false);
@@ -127,10 +161,9 @@ export default function Dashboard() {
 
   const filteredTransactions = useFilteredTransactions(
     transactionsData,
-    selectedPeriod,
-    customDate,
+    period,
   );
-  const periodSummary = usePeriodSummary(filteredTransactions, summary);
+  const periodSummary = usePeriodSummary(filteredTransactions, summary, period);
 
   const styles = StyleSheet.create({
     container: {
@@ -284,8 +317,8 @@ export default function Dashboard() {
         dropdownVisible={dropdownVisible}
         setDropdownVisible={setDropdownVisible}
         setCustomDateModalVisible={setCustomDateModalVisible}
-        selectedPeriod={selectedPeriod}
-        setSelectedPeriod={setSelectedPeriod}
+        period={period}
+        onPeriodChange={setPeriod}
       />
 
       <GoalProgressBar
@@ -318,7 +351,7 @@ export default function Dashboard() {
         setCustomDateModalVisible={setCustomDateModalVisible}
         customDate={customDate}
         setCustomDate={setCustomDate}
-        setSelectedPeriod={setSelectedPeriod}
+        setSelectedPeriod={setPeriod}
       />
 
       {/* Quick Add Modal */}
@@ -334,34 +367,6 @@ export default function Dashboard() {
 
 {currentStep === 1 && (
   <>
-    <Text style={styles.inputLabel}>Full Fee (GHS)</Text>
-    <TextInput
-      style={styles.input}
-      placeholder="0.00"
-      placeholderTextColor={colors.textMuted}
-      keyboardType="numeric"
-      value={manualAmount}
-      onChangeText={setManualAmount}
-      autoFocus={true}
-    />
-  </>
-)}
-{currentStep === 2 && (
-  <>
-    <Text style={styles.inputLabel}>Amount Received (GHS)</Text>
-    <TextInput
-      style={styles.input}
-      placeholder="0.00"
-      placeholderTextColor={colors.textMuted}
-      keyboardType="numeric"
-      value={amountReceived}
-      onChangeText={setAmountReceived}
-      autoFocus={true}
-    />
-  </>
-)}
-{currentStep === 3 && (
-  <>
     <Text style={styles.inputLabel}>Platform</Text>
     <View style={styles.platformContainer}>
       {["YANGO", "BOLT"].map((platform) => (
@@ -371,7 +376,11 @@ export default function Dashboard() {
             styles.platformButton,
             manualPlatform === platform && styles.selectedPlatform,
           ]}
-          onPress={() => setManualPlatform(platform)}
+          onPress={() => {
+            setManualPlatform(platform);
+            setCurrentStep(2);
+            setFieldStep(0);
+          }}
         >
           <Text
             style={[
@@ -384,44 +393,90 @@ export default function Dashboard() {
         </TouchableOpacity>
       ))}
     </View>
+    <View style={{ alignItems: 'center', marginTop: 20 }}>
+      <TouchableOpacity
+        style={[styles.modalButton, styles.cancelButton, { width: '50%' }]}
+        onPress={() => {
+          setCurrentStep(0);
+          resetTransactionStates();
+        }}
+      >
+        <Text style={styles.cancelButtonText}>Cancel</Text>
+      </TouchableOpacity>
+    </View>
+  </>
+)}
+{currentStep === 2 && (
+  <>
+    {(() => {
+      const fields = manualPlatform === "YANGO" ? [
+        { label: 'Trip Price (GHS)', placeholder: '0.00', value: tripPrice, setValue: setTripPrice },
+        { label: 'Bonuses (GHS)', placeholder: '0.00', value: bonuses, setValue: setBonuses },
+        { label: 'System Fees (GHS)', placeholder: '0.00', value: systemFees, setValue: setSystemFees },
+        { label: 'Gross Total (GHS)', placeholder: '0.00', value: grossTotal, setValue: setGrossTotal },
+      ] : [
+        { label: 'Full Fee (GHS)', placeholder: '0.00', value: manualAmount, setValue: setManualAmount },
+        { label: 'Amount Received (GHS)', placeholder: '0.00', value: amountReceived, setValue: setAmountReceived },
+      ];
+      const currentField = fields[fieldStep];
+      return (
+        <>
+          <Text style={styles.inputLabel}>{currentField.label}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={currentField.placeholder}
+            placeholderTextColor={colors.textMuted}
+            keyboardType="numeric"
+            value={currentField.value}
+            onChangeText={currentField.setValue}
+            autoFocus={true}
+          />
+        </>
+      );
+    })()}
   </>
 )}
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setCurrentStep(0);
-                  resetTransactionStates();
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={() => {
-                  if (currentStep === 1) {
-                    const val = parseFloat(manualAmount);
-                    if (isNaN(val) || val <= 0) {
-                      Alert.alert("Invalid Amount", "Please enter a valid full fee greater than 0.");
-                      return;
-                    }
-                    setCurrentStep(2);
-                  } else if (currentStep === 2) {
-                    const val = parseFloat(amountReceived);
-                    if (isNaN(val) || val <= 0) {
-                      Alert.alert("Invalid Amount", "Please enter a valid amount received greater than 0.");
-                      return;
-                    }
-                    setCurrentStep(3);
-                  } else if (currentStep === 3) {
-                    setCurrentStep(4);
-                  }
-                }}
-              >
-                <Text style={styles.saveButtonText}>Next</Text>
-              </TouchableOpacity>
-            </View>
+{currentStep === 2 && (
+  <View style={styles.modalButtons}>
+    <TouchableOpacity
+      style={[styles.modalButton, styles.cancelButton]}
+      onPress={() => {
+        setCurrentStep(0);
+        resetTransactionStates();
+      }}
+    >
+      <Text style={styles.cancelButtonText}>Cancel</Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+      style={[styles.modalButton, styles.saveButton]}
+      onPress={() => {
+        const fields = manualPlatform === "YANGO" ? [
+          { value: tripPrice, min: 0.01, label: 'Trip Price' },
+          { value: bonuses, min: 0, label: 'Bonuses' },
+          { value: systemFees, min: 0, label: 'System Fees' },
+          { value: grossTotal, min: 0.01, label: 'Gross Total' },
+        ] : [
+          { value: manualAmount, min: 0.01, label: 'Full Fee' },
+          { value: amountReceived, min: 0.01, label: 'Amount Received' },
+        ];
+        const currentField = fields[fieldStep];
+        const val = parseFloat(currentField.value);
+        if (isNaN(val) || val < currentField.min) {
+          Alert.alert("Invalid Amount", `Please enter a valid ${currentField.label.replace(' (GHS)', '')} greater than or equal to ${currentField.min}.`);
+          return;
+        }
+        if (fieldStep < fields.length - 1) {
+          setFieldStep(fieldStep + 1);
+        } else {
+          setCurrentStep(3);
+        }
+      }}
+    >
+      <Text style={styles.saveButtonText}>Next</Text>
+    </TouchableOpacity>
+  </View>
+)}
           </View>
         </View>
       </Modal>

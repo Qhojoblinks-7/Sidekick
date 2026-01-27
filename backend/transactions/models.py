@@ -15,6 +15,12 @@ class Transaction(models.Model):
     tx_id = models.CharField(max_length=100, unique=True)  # From MoMo SMS
     amount_received = models.DecimalField(max_digits=10, decimal_places=2)
 
+    # New fields for detailed breakdown
+    trip_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    bonuses = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    system_fees = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    gross_total = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
     # The Split Logic
     rider_profit = models.DecimalField(max_digits=10, decimal_places=2)
     platform_debt = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)

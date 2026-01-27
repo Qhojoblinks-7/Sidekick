@@ -34,7 +34,9 @@ const CustomDateModal = ({
         
         if (event.type === 'set' && selectedDate) {
           setCustomDate(selectedDate);
-          setSelectedPeriod("custom");
+          const startDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+          const endDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() + 1);
+          setSelectedPeriod({ type: "custom", startDate, endDate });
         }
       },
       mode: 'date',
@@ -51,7 +53,9 @@ const CustomDateModal = ({
   };
 
   const handleIosSave = () => {
-    setSelectedPeriod("custom");
+    const startDate = new Date(customDate.getFullYear(), customDate.getMonth(), customDate.getDate());
+    const endDate = new Date(customDate.getFullYear(), customDate.getMonth(), customDate.getDate() + 1);
+    setSelectedPeriod({ type: "custom", startDate, endDate });
     setCustomDateModalVisible(false);
   };
 

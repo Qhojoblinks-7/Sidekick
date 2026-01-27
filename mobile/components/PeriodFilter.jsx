@@ -4,8 +4,8 @@ import { ThemeContext } from '../contexts/ThemeContext';
 
 const PeriodFilter = ({
   dropdownVisible,
-  selectedPeriod,
-  setSelectedPeriod,
+  period,
+  onPeriodChange,
   setDropdownVisible,
   setCustomDateModalVisible,
 }) => {
@@ -44,20 +44,53 @@ const PeriodFilter = ({
     },
   });
 
+  const getDateRange = (periodOption) => {
+    const now = new Date();
+    let startDate, endDate;
+
+    switch (periodOption) {
+      case "today":
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        break;
+      case "week":
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - now.getDay());
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 7);
+        break;
+      case "month":
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        break;
+      case "year":
+        startDate = new Date(now.getFullYear(), 0, 1);
+        endDate = new Date(now.getFullYear() + 1, 0, 1);
+        break;
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    }
+
+    return { startDate, endDate };
+  };
+
   return (
     <View style={styles.dropdown}>
-      {["today", "week", "month", "year"].map((period) => (
+      {["today", "week", "month", "year", "custom"].map((periodOption) => (
         <TouchableOpacity
-          key={period}
+          key={periodOption}
           style={[
             styles.dropdownItem,
-            selectedPeriod === period && styles.selectedDropdownItem,
+            period.type === periodOption && styles.selectedDropdownItem,
           ]}
           onPress={() => {
-            if (period === "custom") {
+            if (periodOption === "custom") {
               setCustomDateModalVisible(true);
             } else {
-              setSelectedPeriod(period);
+              const dateRange = getDateRange(periodOption);
+              onPeriodChange({ type: periodOption, ...dateRange });
             }
             setDropdownVisible(false);
           }}
@@ -65,18 +98,20 @@ const PeriodFilter = ({
           <Text
             style={[
               styles.dropdownText,
-              selectedPeriod === period && styles.selectedDropdownText,
+              period.type === periodOption && styles.selectedDropdownText,
             ]}
           >
-            {period === "today"
+            {periodOption === "today"
               ? "Today"
-              : period === "week"
+              : periodOption === "week"
                 ? "This Week"
-                : period === "month"
+                : periodOption === "month"
                   ? "This Month"
-                  : period === "year"
+                  : periodOption === "year"
                     ? "This Year"
-                    : "Custom Date"}
+                    : periodOption === "custom"
+                      ? "Custom Date"
+                      : "Filter"}
           </Text>
         </TouchableOpacity>
       ))}

@@ -8,8 +8,8 @@ const PageHeader = ({
   dropdownVisible,
   setDropdownVisible,
   setCustomDateModalVisible,
-  selectedPeriod,
-  setSelectedPeriod,
+  period,
+  onPeriodChange,
 }) => {
   const { colors } = useContext(ThemeContext);
 
@@ -94,15 +94,15 @@ const PageHeader = ({
                 color={colors.textMain}
               />
               <Text style={styles.filterText}>
-                {selectedPeriod === "today"
+                {period.type === "today"
                   ? "Today"
-                  : selectedPeriod === "week"
+                  : period.type === "week"
                     ? "This Week"
-                    : selectedPeriod === "month"
+                    : period.type === "month"
                       ? "This Month"
-                      : selectedPeriod === "year"
+                      : period.type === "year"
                         ? "This Year"
-                        : selectedPeriod === "custom"
+                        : period.type === "custom"
                           ? "Custom Date"
                           : "Filter"}
               </Text>
@@ -114,8 +114,8 @@ const PageHeader = ({
             </TouchableOpacity>
             <PeriodFilter
               dropdownVisible={dropdownVisible}
-              selectedPeriod={selectedPeriod}
-              setSelectedPeriod={setSelectedPeriod}
+              period={period}
+              onPeriodChange={onPeriodChange}
               setDropdownVisible={setDropdownVisible}
               setCustomDateModalVisible={setCustomDateModalVisible}
             />

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-const usePeriodSummary = (filteredTransactions, summary) => {
+const usePeriodSummary = (filteredTransactions, summary, period) => {
   return useMemo(() => {
     const yangoIncome = filteredTransactions
       .filter(tx => tx.platform === 'YANGO')
@@ -25,7 +25,7 @@ const usePeriodSummary = (filteredTransactions, summary) => {
       net_profit: netProfit,
       total_debt: totalDebt,
     };
-  }, [filteredTransactions, summary.expenses]);
+  }, [filteredTransactions, summary.expenses, period]);
 };
 
 export default usePeriodSummary;
