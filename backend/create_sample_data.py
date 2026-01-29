@@ -30,7 +30,7 @@ def create_sample_data():
     ]
 
     for data in transactions_data:
-        tx, created = Transaction.objects.get_or_create(tx_id=data['tx_id'], defaults={**data, 'user': user})
+        tx, created = Transaction.objects.get_or_create(tx_id=data['tx_id'], defaults={**data, 'user': user, 'created_at': datetime.datetime.now()})
         if created:
             print(f'Created transaction {data["tx_id"]}')
 
@@ -47,7 +47,7 @@ def create_sample_data():
             user=user,
             amount=data['amount'],
             category=data['category'],
-            defaults={'description': data['description']}
+            defaults={'description': data['description'], 'created_at': datetime.datetime.now()}
         )
         if created:
             print(f'Created expense {data["category"]}')

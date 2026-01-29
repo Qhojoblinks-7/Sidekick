@@ -9,6 +9,12 @@ class Transaction(models.Model):
         ("PRIVATE", "Private"),
     ]
 
+    DEPARTMENT_CHOICES = [
+        ("INVESTMENT", "Investment"),
+        ("REVENUE", "Revenue"),
+        ("OTHER", "Other"),
+    ]
+
     # User association for data isolation - REQUIRED for SaaS
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transactions')
 
@@ -28,9 +34,21 @@ class Transaction(models.Model):
     platform = models.CharField(
         max_length=10, choices=PLATFORM_CHOICES, default="YANGO"
     )
+    department = models.CharField(
+        max_length=20, choices=DEPARTMENT_CHOICES, default="REVENUE"
+    )
     is_tip = models.BooleanField(default=False)
 
     created_at = models.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        if self.platform == 'YANGO':
+            self.department = 'INVESTMENT'
+        elif self.platform == 'BOLT':
+            self.department = 'REVENUE'
+        else:
+            self.department = 'OTHER'
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.user.username} - {self.platform} - GHS {self.amount_received} ({self.tx_id})"
