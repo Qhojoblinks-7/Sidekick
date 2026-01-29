@@ -35,6 +35,9 @@ export default function History() {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
   const [itemToDelete, setItemToDelete] = useState(null);
+
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   
   const [editExpenseModalVisible, setEditExpenseModalVisible] = useState(false);
   
@@ -135,7 +138,8 @@ export default function History() {
       } else {
         dispatch(removeTransaction(parseInt(id)));
       }
-      Alert.alert('Success', 'Transaction deleted successfully');
+      setSuccessMessage('Transaction deleted successfully');
+      setSuccessModalVisible(true);
     } catch (error) {
       console.error('Delete error:', error);
       Alert.alert('Error', 'Failed to delete transaction');
@@ -159,7 +163,8 @@ export default function History() {
           dispatch(removeTransaction(parseInt(realId)));
         }
       }
-      Alert.alert('Success', 'Selected items deleted successfully');
+      setSuccessMessage('Selected items deleted successfully');
+      setSuccessModalVisible(true);
       setSelectedItems([]);
       setIsSelectMode(false);
     } catch (error) {
@@ -678,6 +683,29 @@ export default function History() {
                 <Text style={styles.saveButtonText}>Save</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Success Modal */}
+      <Modal
+        visible={successModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setSuccessModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Success</Text>
+            <Text style={[styles.inputLabel, { textAlign: 'center', marginBottom: 20 }]}>
+              {successMessage}
+            </Text>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.saveButton]}
+              onPress={() => setSuccessModalVisible(false)}
+            >
+              <Text style={styles.saveButtonText}>OK</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>

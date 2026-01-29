@@ -8,15 +8,15 @@ import { useToast } from '../../contexts/ToastContext';
 import { API_BASE_URL } from '../../constants/API';
 import { apiCall } from '../../services/apiService';
 import { useSelector, useDispatch } from 'react-redux';
-import { addExpense, setSummary } from '../../store/store';
 import CustomDateModal from '../../components/CustomDateModal';
 
+
 export default function Expenses() {
-   const { colors } = useContext(ThemeContext);
-   const { showToast } = useToast();
-   const dispatch = useDispatch();
-   const { dailyTarget } = useSelector(state => state.settings);
-   const { summary, expenses } = useSelector(state => state.data);
+    const { colors } = useContext(ThemeContext);
+    const { showToast } = useToast();
+    const { dailyTarget } = useSelector(state => state.settings);
+    const { expenses } = useSelector(state => state.data);
+    const addExpenseMutation = useAddExpense();
 
    const [amount, setAmount] = useState('');
    const [category, setCategory] = useState('Fuel');
@@ -44,34 +44,12 @@ export default function Expenses() {
 
     setIsLoading(true);
     try {
-      const response = await apiCall('/api/expenses/', {
-        method: 'POST',
-        body: JSON.stringify({
-          amount: parseFloat(amount),
-          category: categoryMap[category],
-          description: `${category} expense`,
-          created_at: expenseDate.toISOString(),
-        }),
+      await addExpenseMutation.mutateAsync({
+        amount: parseFloat(amount),
+        category: categoryMap[category],
+        description: `${category} expense`,
+        created_at: expenseDate.toISOString(),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Failed to save expense: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log('Expense saved:', result);
-
-      // Update Redux store with new expense and updated summary
-      dispatch(addExpense(result));
-
-      // Update summary with new expense amount
-      const updatedSummary = {
-        ...summary,
-        expenses: summary.expenses + parseFloat(amount),
-        net_profit: summary.net_profit - parseFloat(amount)
-      };
-      dispatch(setSummary(updatedSummary));
 
       // Reset form
       setAmount('');

@@ -1,12 +1,26 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
 import { apiCall } from '../services/apiService';
-import { addTransaction, addExpense, setSummary } from '../store/store';
+import { addTransaction, addExpense, removeTransaction, removeExpense, setSummary, selectSummary } from '../store/store';
+
+const updateSummary = async (dispatch) => {
+  try {
+    const response = await apiCall('/api/transactions/summary/daily/');
+    if (response.ok) {
+      const summary = await response.json();
+      dispatch(setSummary(summary));
+    } else {
+      console.error('Failed to fetch summary:', response.status);
+    }
+  } catch (error) {
+    console.error('Error updating summary:', error);
+  }
+};
 
 export const useAddTransaction = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
-  const { summary } = useSelector(state => state.data);
+  const summary = useSelector(selectSummary);
 
   return useMutation({
     mutationFn: async (newTx) => {
@@ -27,19 +41,9 @@ export const useAddTransaction = () => {
         throw error;
       }
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       dispatch(addTransaction(result));
-      const today = new Date().toDateString();
-      const txDate = new Date(result.created_at).toDateString();
-      if (txDate === today) {
-        const updatedSummary = {
-          ...summary,
-          net_profit: summary.net_profit + parseFloat(result.rider_profit || 0),
-          total_debt: summary.total_debt + parseFloat(result.platform_debt || 0),
-        };
-        dispatch(setSummary(updatedSummary));
-      }
-      // This is the magic line: it tells the Dashboard its data is old
+      await updateSummary(dispatch);
       queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
     },
   });
@@ -67,7 +71,8 @@ export const useUpdateTransaction = () => {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await updateSummary(dispatch);
       queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
     },
   });
@@ -76,7 +81,7 @@ export const useUpdateTransaction = () => {
 export const useAddExpense = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
-  const { summary } = useSelector(state => state.data);
+  const summary = useSelector(selectSummary);
 
   return useMutation({
     mutationFn: async (newExpense) => {
@@ -116,6 +121,7 @@ export const useAddExpense = () => {
 
 export const useUpdateExpense = () => {
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
   return useMutation({
     mutationFn: async ({ id, updatedExpense }) => {
@@ -136,7 +142,38 @@ export const useUpdateExpense = () => {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await updateSummary(dispatch);
+      queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
+    },
+  });
+};
+
+export const useDeleteExpense = () => {
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+
+  return useMutation({
+    mutationFn: async (id) => {
+      try {
+        const response = await apiCall(`/api/expenses/${id}/`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Failed to delete expense: ${response.status} ${response.statusText}. ${errorData.detail || ''}`);
+        }
+        return response;
+      } catch (error) {
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          throw new Error('Network error: Unable to connect to the server. Please check your internet connection.');
+        }
+        throw error;
+      }
+    },
+    onSuccess: async (result, id) => {
+      dispatch(removeExpense(id));
+      await updateSummary(dispatch);
       queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
     },
   });

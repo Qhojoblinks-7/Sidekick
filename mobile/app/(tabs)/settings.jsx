@@ -24,11 +24,18 @@ import {
   setDailyTarget,
   setVehicleType,
   setSmsEnabled,
-  loadSettings,
   setSummary,
   setTransactions,
   setExpenses,
   updatePlatformDebt,
+  selectIsOnline,
+  selectIsSyncing,
+  selectLastSyncTime,
+  selectDailyTarget,
+  selectVehicleType,
+  selectSmsEnabled,
+  selectSummary,
+  selectTransactions,
 } from "../../store/store";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -37,13 +44,14 @@ export default function Settings() {
   const dispatch = useDispatch();
   const router = useRouter();
   const { logout, user } = useAuth();
-  const { isOnline, isSyncing, lastSyncTime } = useSelector(
-    (state) => state.ui,
-  );
-  const { dailyTarget, vehicleType, smsEnabled } = useSelector(
-    (state) => state.settings,
-  );
-  const { summary, transactions } = useSelector((state) => state.data);
+  const isOnline = useSelector(selectIsOnline);
+  const isSyncing = useSelector(selectIsSyncing);
+  const lastSyncTime = useSelector(selectLastSyncTime);
+  const dailyTarget = useSelector(selectDailyTarget);
+  const vehicleType = useSelector(selectVehicleType);
+  const smsEnabled = useSelector(selectSmsEnabled);
+  const summary = useSelector(selectSummary);
+  const transactions = useSelector(selectTransactions);
 
   // Calculate rider stats
   const currentMonth = new Date().getMonth();
@@ -100,24 +108,6 @@ export default function Settings() {
 
   useEffect(() => {
     checkBackendConnection();
-  }, []);
-
-  useEffect(() => {
-    const loadSettingsFromStorage = async () => {
-      console.log('Loading settings from AsyncStorage');
-      try {
-        const stored = await AsyncStorage.getItem('settings');
-        console.log('Stored settings:', stored);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          console.log('Parsed settings:', parsed);
-          dispatch(loadSettings(parsed));
-        }
-      } catch (error) {
-        console.error('Error loading settings:', error);
-      }
-    };
-    loadSettingsFromStorage();
   }, []);
 
   useEffect(() => {

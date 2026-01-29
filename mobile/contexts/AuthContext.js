@@ -1,6 +1,9 @@
 import React, { createContext, useState, useEffect } from "react";
 import * as SecureStore from "expo-secure-store";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAccessToken, logout as logoutUser } from "../services/apiService";
+import { store } from '../store/store';
+import { loadSettings } from '../store/store';
 
 export const AuthContext = createContext();
 
@@ -20,8 +23,15 @@ export const AuthProvider = ({ children }) => {
           const token = await getAccessToken();
           setIsAuthenticated(!!token);
         }
+
+        // Load settings from AsyncStorage at app startup
+        const stored = await AsyncStorage.getItem('settings');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          store.dispatch(loadSettings(parsed));
+        }
       } catch (error) {
-        console.error("Failed to check auth status:", error);
+        console.error("Failed to check auth status or load settings:", error);
       } finally {
         setIsLoading(false);
       }

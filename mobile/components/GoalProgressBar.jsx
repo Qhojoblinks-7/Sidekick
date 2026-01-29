@@ -1,9 +1,12 @@
 import React, { useContext } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useSelector } from 'react-redux';
 import { ThemeContext } from '../contexts/ThemeContext';
+import { selectDailyTarget } from '../store/store';
 
-export const GoalProgressBar = ({ current, target = 500 }) => {
+export const GoalProgressBar = ({ current }) => {
   const { colors } = useContext(ThemeContext);
+  const target = useSelector(selectDailyTarget);
   const percentage = Math.min((current / target) * 100, 100);
 
   const styles = StyleSheet.create({

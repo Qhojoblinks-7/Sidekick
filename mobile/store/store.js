@@ -1,5 +1,11 @@
 import { configureStore, createSlice } from '@reduxjs/toolkit';
 
+import { persistStore, persistReducer } from 'redux-persist';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { combineReducers } from '@reduxjs/toolkit';
+
 // UI Slice for general app state
 const uiSlice = createSlice({
   name: 'ui',
@@ -42,6 +48,8 @@ const dataSlice = createSlice({
     },
     transactions: [],
     expenses: [],
+    pendingTransactions: [],
+    pendingExpenses: [],
   },
   reducers: {
     setSummary: (state, action) => { state.summary = action.payload; },
@@ -66,8 +74,30 @@ const dataSlice = createSlice({
     updatePlatformDebt: (state, action) => { state.summary.total_debt = action.payload; },
   },
 });
+const persistConfig = {
+
+  key: 'root',
+
+  storage: AsyncStorage,
+
+  whitelist: ['data'],
+
+};
+
+const rootReducer = combineReducers({
+
+  ui: uiSlice.reducer,
+
+  settings: settingsSlice.reducer,
+
+  data: dataSlice.reducer,
+
+});
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const { setOnline, setSyncing, setLastSyncTime } = uiSlice.actions;
+
 export const { setDailyTarget, setVehicleType, setSmsEnabled, loadSettings } = settingsSlice.actions;
 export const {
   setSummary,
@@ -81,6 +111,19 @@ export const {
   updateExpense,
   updatePlatformDebt
 } = dataSlice.actions;
+
+// Selectors
+export const selectIsOnline = (state) => state.ui.isOnline;
+export const selectIsSyncing = (state) => state.ui.isSyncing;
+export const selectLastSyncTime = (state) => state.ui.lastSyncTime;
+
+export const selectDailyTarget = (state) => state.settings.dailyTarget;
+export const selectVehicleType = (state) => state.settings.vehicleType;
+export const selectSmsEnabled = (state) => state.settings.smsEnabled;
+
+export const selectSummary = (state) => state.data.summary;
+export const selectTransactions = (state) => state.data.transactions;
+export const selectExpenses = (state) => state.data.expenses;
 
 export const store = configureStore({
   reducer: {

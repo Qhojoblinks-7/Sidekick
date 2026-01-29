@@ -30,6 +30,10 @@ export const parseMoMoSMS = (message) => {
     platform_debt = commission;
   }
 
+  // Round to 2 decimal places to prevent precision issues
+  rider_profit = parseFloat(rider_profit.toFixed(2));
+  platform_debt = parseFloat(platform_debt.toFixed(2));
+
   return {
     tx_id,
     amount_received: amount,

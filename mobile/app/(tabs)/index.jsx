@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useQueryClient } from "@tanstack/react-query";
-import { setSyncing, addTransaction as addTransactionAction } from "../../store/store";
+import { setSyncing, addTransaction as addTransactionAction, selectSummary, selectTransactions, selectDailyTarget, selectSmsEnabled, selectIsSyncing } from "../../store/store";
 import { apiCall } from "../../services/apiService";
-import { parseIncomingMoMo } from "../../utils/momoTracker";
 import {
   ScrollView,
   View,
@@ -28,7 +27,7 @@ import CustomDateModal from "../../components/CustomDateModal";
 import useDashboardData from "../../hooks/useDashboardData";
 import useFilteredTransactions from "../../hooks/useFilteredTransactions";
 import usePeriodSummary from "../../hooks/usePeriodSummary";
-import { startLiveTracking, syncMissedTrips } from "../../services/smsService";
+import { startLiveTracking, syncMissedTrips, requestSMSPermissions } from "../../services/smsService";
 import io from "socket.io-client";
 
 export default function Dashboard() {
@@ -36,11 +35,11 @@ export default function Dashboard() {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
-  const { summary, transactions: transactionsData } = useSelector(
-    (state) => state.data,
-  );
-  const { dailyTarget } = useSelector((state) => state.settings);
-  const { isSyncing } = useSelector((state) => state.ui);
+  const summary = useSelector(selectSummary);
+  const transactionsData = useSelector(selectTransactions);
+  const dailyTarget = useSelector(selectDailyTarget);
+  const smsEnabled = useSelector(selectSmsEnabled);
+  const isSyncing = useSelector(selectIsSyncing);
 
   const getInitialPeriod = () => {
     const now = new Date();
@@ -64,6 +63,9 @@ export default function Dashboard() {
   const [bonuses, setBonuses] = useState("");
   const [systemFees, setSystemFees] = useState("");
   const [grossTotal, setGrossTotal] = useState("");
+  const [manualSyncLoading, setManualSyncLoading] = useState(false);
+  const hasSyncedOnStartup = useRef(false);
+  const hasRequestedPermission = useRef(false);
   const resetTransactionStates = () => {
     setManualAmount("");
     setAmountReceived("");
@@ -147,6 +149,9 @@ export default function Dashboard() {
         isTip = true;
       }
     }
+    // Round to 2 decimal places to avoid precision issues
+    riderProfit = parseFloat(riderProfit.toFixed(2));
+    platformDebt = parseFloat(platformDebt.toFixed(2));
     addTransaction(
       {
         tx_id: `manual-${Date.now()}`,
@@ -180,55 +185,75 @@ export default function Dashboard() {
   }, [queryClient]);
 
   useEffect(() => {
-    // 1. Run the Scanner once on startup
-    dispatch(setSyncing(true));
-    syncMissedTrips(null, (trips) => { // Assuming lastKnownTripId is null for now
-      if (trips.length > 0) {
-        trips.forEach((trip) => {
-          addTransaction(
-            {
-              tx_id: trip.transactionId,
-              amount_received: trip.amount,
-              rider_profit: trip.amount,
-              platform_debt: 0,
-              platform: trip.source === 'Bolt Food' ? 'BOLT' : 'YANGO',
-              is_tip: false,
-              created_at: new Date().toISOString(),
-            },
-            {
-              onSuccess: () => {
-                showToast(`Synced missed payment: GHS ${trip.amount} from ${trip.source}`, "success");
-              },
-            },
-          );
-        });
-      }
-      dispatch(setSyncing(false));
-    });
+    let stopListening = () => {};
 
-    // 2. Start the Live Listener
-    const stopListening = startLiveTracking((trip) => {
-      addTransaction(
-        {
-          tx_id: trip.transactionId,
-          amount_received: trip.amount,
-          rider_profit: trip.amount,
-          platform_debt: 0,
-          platform: trip.source === 'Bolt Food' ? 'BOLT' : 'YANGO',
-          is_tip: false,
-          created_at: new Date().toISOString(),
-        },
-        {
-          onSuccess: () => {
-            showToast(`New ${trip.source} Payment: GHS ${trip.amount}`, "success");
-            Vibration.vibrate();
-          },
-        },
-      );
-    });
+    if (smsEnabled && !hasSyncedOnStartup.current) {
+      hasSyncedOnStartup.current = true;
+      // 1. Run the Scanner once on startup (non-blocking)
+      syncMissedTrips(null).then((trips) => { // Assuming lastKnownTripId is null for now
+        if (trips.length > 0) {
+          trips.forEach((trip) => {
+            addTransaction(
+              {
+                tx_id: trip.transactionId,
+                amount_received: trip.amount,
+                rider_profit: trip.amount,
+                platform_debt: 0,
+                platform: trip.source === 'Bolt Food' ? 'BOLT' : 'YANGO',
+                is_tip: false,
+                created_at: new Date().toISOString(),
+              },
+              {
+                onSuccess: () => {
+                  showToast(`Synced missed payment: GHS ${trip.amount} from ${trip.source}`, "success");
+                },
+              },
+            );
+          });
+        }
+      }).catch((error) => {
+        console.error('Startup sync failed:', error);
+        // Optionally show toast if permission denied
+        if (error.message.includes('permission')) {
+          showToast('SMS permission required for automatic payment capture', 'warning');
+        }
+      });
+    }
+
+    if (smsEnabled && !hasRequestedPermission.current) {
+      hasRequestedPermission.current = true;
+      // 2. Start the Live Listener (only if permission granted)
+      requestSMSPermissions().then((granted) => {
+        if (granted) {
+          stopListening = startLiveTracking((trip) => {
+            addTransaction(
+              {
+                tx_id: trip.transactionId,
+                amount_received: trip.amount,
+                rider_profit: trip.amount,
+                platform_debt: 0,
+                platform: trip.source === 'Bolt Food' ? 'BOLT' : 'YANGO',
+                is_tip: false,
+                created_at: new Date().toISOString(),
+              },
+              {
+                onSuccess: () => {
+                  showToast(`New ${trip.source} Payment: GHS ${trip.amount}`, "success");
+                  Vibration.vibrate();
+                },
+              },
+            );
+          });
+        }
+      });
+    } else if (!smsEnabled) {
+      // Reset flags when SMS is disabled
+      hasSyncedOnStartup.current = false;
+      hasRequestedPermission.current = false;
+    }
 
     return () => stopListening();
-  }, []);
+  }, [smsEnabled]);
   useEffect(() => {
     if (currentStep === 3) {
       setTransactionDateModalVisible(true);
@@ -413,43 +438,60 @@ export default function Dashboard() {
         target={dailyTarget}
       />
 
-      <View style={{ paddingHorizontal: 16, marginTop: 10 }}>
-        <TouchableOpacity
-          style={{
-            backgroundColor: colors.profit,
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            borderRadius: 12,
-            alignItems: 'center',
-          }}
-          onPress={() => {
-            const sampleSMS = "Payment received for GHS 45.00 from 0244000111. Ref: Bolt Food Order 123. Transaction ID: 98765432.";
-            const parsed = parseIncomingMoMo(sampleSMS);
-            if (parsed) {
-              addTransaction(
-                {
-                  tx_id: parsed.transactionId,
-                  amount_received: parsed.amount,
-                  rider_profit: parsed.amount,
-                  platform_debt: 0,
-                  platform: parsed.source === 'Bolt Food' ? 'BOLT' : 'YANGO',
-                  is_tip: false,
-                  created_at: new Date().toISOString(),
-                },
-                {
-                  onSuccess: () => {
-                    showToast(`MoMo payment captured: GHS ${parsed.amount} from ${parsed.source}`, "success");
-                  },
-                },
-              );
-            } else {
-              showToast("Failed to parse MoMo SMS", "error");
-            }
-          }}
-        >
-          <Text style={{ color: colors.textMain, fontWeight: 'bold' }}>Test MoMo Capture</Text>
-        </TouchableOpacity>
-      </View>
+      {smsEnabled && (
+        <View style={{ paddingHorizontal: 16, marginTop: 10 }}>
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.profit,
+              paddingVertical: 12,
+              paddingHorizontal: 20,
+              borderRadius: 12,
+              alignItems: 'center',
+            }}
+            onPress={() => {
+              dispatch(setSyncing(true));
+              syncMissedTrips(null).then((trips) => {
+                if (trips.length > 0) {
+                  trips.forEach((trip) => {
+                    addTransaction(
+                      {
+                        tx_id: trip.transactionId,
+                        amount_received: trip.amount,
+                        rider_profit: trip.amount,
+                        platform_debt: 0,
+                        platform: trip.source === 'Bolt Food' ? 'BOLT' : 'YANGO',
+                        is_tip: false,
+                        created_at: new Date().toISOString(),
+                      },
+                      {
+                        onSuccess: () => {
+                          showToast(`Synced missed payment: GHS ${trip.amount} from ${trip.source}`, "success");
+                        },
+                      },
+                    );
+                  });
+                } else {
+                  showToast("No new missed payments found", "info");
+                }
+                dispatch(setSyncing(false));
+              }).catch((error) => {
+                console.error('Manual sync failed:', error);
+                dispatch(setSyncing(false));
+                if (error.message.includes('permission')) {
+                  showToast('SMS permission required. Please enable in settings.', 'error');
+                } else {
+                  showToast('Failed to sync payments. Please try again.', 'error');
+                }
+              });
+            }}
+            disabled={manualSyncLoading}
+          >
+            <Text style={{ color: colors.textMain, fontWeight: 'bold' }}>
+              {manualSyncLoading ? 'Syncing...' : 'Sync Missed Payments'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <ScrollView style={styles.cardsScroll}>
         <DashboardCards
@@ -654,6 +696,7 @@ export default function Dashboard() {
           </View>
         </View>
       </Modal>
+
     </SafeAreaView>
   );
 }
