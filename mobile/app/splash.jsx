@@ -25,9 +25,9 @@ export default function SplashScreen() {
       })
     ]).start();
 
-    // Navigate to Dashboard after 2.5 seconds
+    // Navigate to index after 2.5 seconds (which will check auth and redirect)
     const timer = setTimeout(() => {
-      router.replace('/(tabs)');
+      router.replace('/?from=splash');
     }, 2500);
 
     return () => clearTimeout(timer);
