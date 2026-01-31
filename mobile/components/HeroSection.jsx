@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { ThemeContext } from "../contexts/ThemeContext";
+import { AnimatedCounter } from "./AnimatedCounter";
 
 export const HeroSection = ({ netProfit, income, expenses, target }) => {
   const { colors } = useContext(ThemeContext);
@@ -44,6 +45,12 @@ export const HeroSection = ({ netProfit, income, expenses, target }) => {
       fontSize: 48,
       fontWeight: "900",
       marginBottom: 8,
+    },
+    netProfitCurrency: {
+      color: profitColor,
+      fontSize: 24,
+      fontWeight: "900",
+      marginLeft: 4,
     },
     pillsContainer: {
       flexDirection: "row",
@@ -134,9 +141,17 @@ export const HeroSection = ({ netProfit, income, expenses, target }) => {
     <View style={styles.container}>
       <View style={styles.netProfitCard}>
         <Text style={styles.label}>Daily Net Profit</Text>
-        <Text style={[styles.netProfitAmount]}>
-          {isNegative ? '-' : ''}GH₵ {parseFloat(Math.abs(netProfit) || 0).toFixed(2)}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+          <AnimatedCounter
+            value={Math.abs(netProfit || 0)}
+            prefix={isNegative ? "-" : ""}
+            style={[styles.netProfitAmount, { color: profitColor }]}
+            duration={1200}
+          />
+          <Text style={[styles.netProfitCurrency, { color: profitColor }]}>
+            GH₵
+          </Text>
+        </View>
 
         {/* Status Badge for Target Exceeded */}
         {isExceeded && (
@@ -150,12 +165,12 @@ export const HeroSection = ({ netProfit, income, expenses, target }) => {
         <View style={styles.pillsContainer}>
           <View style={[styles.pill, styles.incomePill]}>
             <Text style={[styles.pillText, styles.incomeText]}>
-              Income: {parseFloat(income || 0).toFixed(2)}
+              Income: <AnimatedCounter value={income || 0} duration={1000} decimals={2} />
             </Text>
           </View>
           <View style={[styles.pill, styles.expensePill]}>
             <Text style={[styles.pillText, styles.expenseText]}>
-              Expenses: {parseFloat(expenses || 0).toFixed(2)}
+              Expenses: <AnimatedCounter value={expenses || 0} duration={1000} decimals={2} />
             </Text>
           </View>
         </View>
@@ -165,11 +180,12 @@ export const HeroSection = ({ netProfit, income, expenses, target }) => {
         <View style={styles.progressBarColumn}>
           <View style={styles.progressHeaderRow}>
             <Text style={styles.progressText}>
-              {isNegative ? 'Deficit' : (isExceeded ? 'Goal Reached!' : `${progress.toFixed(0)}% of Goal`)}
+              {isNegative ? "Deficit" : isExceeded ? "Goal Reached!" : `${progress.toFixed(0)}% of Goal`}
             </Text>
             <Text style={styles.goalAmountText}>
-              {isNegative ? 'Shortfall: ' : ''}GH₵ {parseFloat(Math.abs(netProfit) || 0).toFixed(2)}/GH₵{" "}
-              {parseFloat(target || 0).toFixed(2)}
+              {isNegative ? "Shortfall: " : ""}GH₵{" "}
+              <AnimatedCounter value={Math.abs(netProfit) || 0} duration={1000} decimals={2} />/GH₵{" "}
+              <AnimatedCounter value={target || 0} duration={1000} decimals={2} />
             </Text>
           </View>
           <View style={styles.progressBarBackground}>
@@ -180,4 +196,3 @@ export const HeroSection = ({ netProfit, income, expenses, target }) => {
     </View>
   );
 };
-

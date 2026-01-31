@@ -1,7 +1,8 @@
-import React, { useContext, useEffect, useRef } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { ThemeContext } from "../contexts/ThemeContext";
+import { AnimatedCounter } from "./AnimatedCounter";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -132,12 +133,16 @@ const ProgressRing = ({
         />
       </Svg>
       <View style={ringStyles.ringLabel}>
-        <Text style={[ringStyles.ringPercentage, { color: ringColor }]}>
-          {progress.toFixed(0)}%
-        </Text>
+        <AnimatedCounter
+          value={progress}
+          suffix="%"
+          style={[ringStyles.ringPercentage, { color: ringColor }]}
+          duration={1000}
+          decimals={0}
+        />
         <Text style={ringStyles.ringLabelText}>{label}</Text>
         <Text style={ringStyles.ringAmount}>
-          GH₵ {parseFloat(amount || 0).toFixed(2)}
+          GH₵ <AnimatedCounter value={amount || 0} duration={1000} decimals={2} />
         </Text>
       </View>
     </View>

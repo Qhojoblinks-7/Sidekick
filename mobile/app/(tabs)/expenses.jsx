@@ -1,4 +1,4 @@
-import React, { useState, useContext, useRef } from 'react';
+import React, { useState, useContext, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -10,7 +10,8 @@ import {
   Dimensions,
   TextInput,
   Vibration,
-  Platform
+  Platform,
+  Easing
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeContext } from '../../contexts/ThemeContext';
@@ -20,6 +21,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { addExpense, selectDailyTarget } from '../../store/store';
 import { Ionicons } from '@expo/vector-icons';
+import { AnimatedCounter } from '../../components/AnimatedCounter';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -72,6 +74,19 @@ export default function Expenses() {
   const [amount, setAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const bottomSheetAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  
+  // Animated value for progress bar width
+  const progressWidthAnim = useRef(new Animated.Value(0)).current;
+
+  // Animate progress bar on mount
+  useEffect(() => {
+    Animated.timing(progressWidthAnim, {
+      toValue: burnPercentage,
+      duration: 1200,
+      useNativeDriver: false,
+      easing: Easing.out(Easing.ease),
+    }).start();
+  }, [burnPercentage]);
 
   // Mutations
   const addExpenseMutation = useMutation({
@@ -222,7 +237,6 @@ export default function Expenses() {
       height: '100%',
       borderRadius: 6,
       backgroundColor: isWarning ? '#f97316' : '#14b8a6',
-      width: `${burnPercentage}%`,
     },
     progressThreshold: {
       position: 'absolute',
@@ -411,14 +425,37 @@ export default function Expenses() {
           <View style={styles.burnMeterHeader}>
             <Text style={styles.burnMeterLabel}>Daily Burn</Text>
             <View>
-              <Text style={styles.burnMeterValue}>-GH₵ {todayExpenses.toFixed(2)}</Text>
+              <AnimatedCounter
+                value={todayExpenses}
+                prefix="-GH₵ "
+                style={styles.burnMeterValue}
+                duration={1200}
+                decimals={2}
+              />
               <Text style={styles.burnMeterSubtext}>
-                {burnPercentage.toFixed(0)}% of daily earnings
+                <AnimatedCounter
+                  value={burnPercentage}
+                  suffix="% of daily earnings"
+                  style={styles.burnMeterSubtext}
+                  duration={1200}
+                  decimals={0}
+                />
               </Text>
             </View>
           </View>
           <View style={styles.progressBarContainer}>
-            <View style={styles.progressBar} />
+            <Animated.View
+              style={[
+                styles.progressBar,
+                {
+                  width: progressWidthAnim.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '100%'],
+                    extrapolate: 'clamp',
+                  }),
+                },
+              ]}
+            />
             <View style={styles.progressThreshold} />
           </View>
         </View>
