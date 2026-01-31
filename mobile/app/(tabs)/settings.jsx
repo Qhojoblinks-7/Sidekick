@@ -111,6 +111,8 @@ export default function Settings() {
   useEffect(() => {
     checkBackendConnection();
     loadSettingsFromStorage();
+    // Auto-sync data on mount
+    syncData();
   }, []);
 
   const loadSettingsFromStorage = async () => {
