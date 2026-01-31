@@ -3,7 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Alert,
@@ -11,6 +10,7 @@ import {
   TextInput,
   Modal,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeContext } from "../../contexts/ThemeContext";

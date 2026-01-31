@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  SafeAreaView,
   StyleSheet,
   TouchableOpacity,
   Modal,
@@ -11,6 +10,7 @@ import {
   Alert,
   Animated,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { TransactionItem } from "../../components/TransactionItem";
 import { FilterHub } from "../../components/FilterHub";
 import { EditTransactionModal } from "../../components/EditTransactionModal";
@@ -282,7 +282,9 @@ export default function History() {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      marginTop: 70,
+    },
+    headerWrapper: {
+      marginTop: 30,
     },
     scroll: {
       paddingHorizontal: 16,
@@ -431,8 +433,9 @@ export default function History() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Filter Hub */}
-      <FilterHub
+      <View style={styles.headerWrapper}>
+        {/* Filter Hub */}
+        <FilterHub
         selectedFilter={selectedFilter}
         onFilterChange={setSelectedFilter}
         transactionCount={todayCount}
@@ -445,7 +448,8 @@ export default function History() {
         totalItems={transactions.length}
         onSelectAll={handleSelectAll}
         onDeselectAll={handleDeselectAll}
-      />
+        />
+      </View>
 
       {/* The Feed */}
       <FlatList

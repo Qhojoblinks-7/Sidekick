@@ -3,7 +3,6 @@ import {
   View, 
   Text, 
   TouchableOpacity, 
-  SafeAreaView, 
   ScrollView, 
   StyleSheet, 
   Alert,
@@ -13,6 +12,7 @@ import {
   Vibration,
   Platform
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
 import { apiCall } from '../../services/apiService';
@@ -155,7 +155,7 @@ export default function Expenses() {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      paddingTop: 50,
+      paddingTop: 10,
     },
     header: {
       paddingHorizontal: 20,

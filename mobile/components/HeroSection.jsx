@@ -5,7 +5,13 @@ import { ThemeContext } from "../contexts/ThemeContext";
 export const HeroSection = ({ netProfit, income, expenses, target }) => {
   const { colors } = useContext(ThemeContext);
 
-  const progress = target > 0 ? Math.min((netProfit / target) * 100, 100) : 0;
+  const isNegative = netProfit < 0;
+  const isExceeded = target > 0 && netProfit >= target;
+  const progress = target > 0 ? Math.min((Math.abs(netProfit) / target) * 100, 100) : 0;
+
+  // Dynamic colors based on edge cases
+  const profitColor = isNegative ? colors.expense : colors.profit;
+  const progressBarColor = isExceeded ? colors.profit : (isNegative ? colors.expense : colors.debt);
 
   const styles = StyleSheet.create({
     container: {
@@ -34,7 +40,7 @@ export const HeroSection = ({ netProfit, income, expenses, target }) => {
       marginBottom: 8,
     },
     netProfitAmount: {
-      color: colors.textMain,
+      color: profitColor,
       fontSize: 48,
       fontWeight: "900",
       marginBottom: 8,
@@ -101,8 +107,26 @@ export const HeroSection = ({ netProfit, income, expenses, target }) => {
     },
     progressBarFill: {
       height: "100%",
-      backgroundColor: progress >= 100 ? colors.profit : colors.debt,
+      backgroundColor: progressBarColor,
       borderRadius: 7,
+    },
+    statusBadge: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      marginTop: 8,
+    },
+    statusBadgeText: {
+      fontSize: 12,
+      fontWeight: "700",
+    },
+    exceededBadge: {
+      backgroundColor: `${colors.profit}20`,
+      borderWidth: 1,
+      borderColor: colors.profit,
+    },
+    exceededBadgeText: {
+      color: colors.profit,
     },
   });
 
@@ -110,9 +134,18 @@ export const HeroSection = ({ netProfit, income, expenses, target }) => {
     <View style={styles.container}>
       <View style={styles.netProfitCard}>
         <Text style={styles.label}>Daily Net Profit</Text>
-        <Text style={styles.netProfitAmount}>
-          GH₵ {parseFloat(netProfit || 0).toFixed(2)}
+        <Text style={[styles.netProfitAmount]}>
+          {isNegative ? '-' : ''}GH₵ {parseFloat(Math.abs(netProfit) || 0).toFixed(2)}
         </Text>
+
+        {/* Status Badge for Target Exceeded */}
+        {isExceeded && (
+          <View style={[styles.pill, styles.exceededBadge]}>
+            <Text style={[styles.pillText, styles.exceededBadgeText]}>
+              Target Exceeded! 🎉
+            </Text>
+          </View>
+        )}
 
         <View style={styles.pillsContainer}>
           <View style={[styles.pill, styles.incomePill]}>
@@ -132,10 +165,10 @@ export const HeroSection = ({ netProfit, income, expenses, target }) => {
         <View style={styles.progressBarColumn}>
           <View style={styles.progressHeaderRow}>
             <Text style={styles.progressText}>
-              {progress.toFixed(0)}% of Goal
+              {isNegative ? 'Deficit' : (isExceeded ? 'Goal Reached!' : `${progress.toFixed(0)}% of Goal`)}
             </Text>
             <Text style={styles.goalAmountText}>
-              GH₵ {parseFloat(netProfit || 0).toFixed(2)}/GH₵{" "}
+              {isNegative ? 'Shortfall: ' : ''}GH₵ {parseFloat(Math.abs(netProfit) || 0).toFixed(2)}/GH₵{" "}
               {parseFloat(target || 0).toFixed(2)}
             </Text>
           </View>
@@ -147,3 +180,4 @@ export const HeroSection = ({ netProfit, income, expenses, target }) => {
     </View>
   );
 };
+

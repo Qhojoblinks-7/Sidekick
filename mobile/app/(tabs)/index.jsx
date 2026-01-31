@@ -482,13 +482,15 @@ export default function Dashboard() {
 
   return (
     <View style={styles.container}>
-      <PageHeader
-        dropdownVisible={dropdownVisible}
-        setDropdownVisible={setDropdownVisible}
-        setCustomDateModalVisible={setCustomDateModalVisible}
-        period={period}
-        onPeriodChange={setPeriod}
-      />
+      <View style={{ marginTop: 50, marginHorizontal: 15 }}>
+        <PageHeader
+          dropdownVisible={dropdownVisible}
+          setDropdownVisible={setDropdownVisible}
+          setCustomDateModalVisible={setCustomDateModalVisible}
+          period={period}
+          onPeriodChange={setPeriod}
+        />
+      </View>
 
       <HeroSection
         netProfit={summaryData.net_profit}
