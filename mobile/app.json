@@ -1,38 +1,44 @@
 {
   "expo": {
+    "name": "Sidekick",
+    "slug": "sidekick",
+    "version": "1.0.0",
+    "scheme": "sidekick",
+    "icon": "./assets/brand-icon.png",
     "android": {
       "package": "com.sidekick.deliverytracker",
-      "minSdkVersion": 34,
       "permissions": [
         "RECEIVE_SMS",
         "READ_SMS"
-      ]
+      ],
+      "intentFilters": [
+        {
+          "action": "android.provider.Telephony.SMS_RECEIVED",
+          "priority": 999
+        }
+  ]
     },
-    "extra": {
-      "eas": {
-        "projectId": "9ed58529-e307-4cd6-968f-189c90e257fa"
-      },
-      "router": {}
-    },
-    "icon": "./assets/brand-icon.png",
     "ios": {
       "bundleIdentifier": "com.sidekick.deliverytracker",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
-    "name": "Sidekick",
     "plugins": [
       "expo-router",
       "expo-secure-store",
       "expo-font",
-      "expo-dev-client"
+      "expo-dev-client",
+      "@react-native-community/datetimepicker"
     ],
-    "scheme": "sidekick",
-    "slug": "sidekick",
     "splash": {
       "backgroundColor": "#000000",
       "resizeMode": "contain"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9ed58529-e307-4cd6-968f-189c90e257fa"
+      }
     }
   }
 }

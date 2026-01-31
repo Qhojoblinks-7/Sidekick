@@ -26,13 +26,18 @@ export const parseMoMoSMS = (message) => {
   let platform_debt = 0;
   if (platform !== 'PRIVATE') {
     const commission = amount * 0.1; // 10% commission
+    console.log(`[CALC_DEBUG] Amount: ${amount}, Commission: ${commission}, Platform: ${platform}`);
     rider_profit = amount - commission;
     platform_debt = commission;
   }
 
   // Round to 2 decimal places to prevent precision issues
+  const original_rider_profit = rider_profit;
+  const original_platform_debt = platform_debt;
   rider_profit = parseFloat(rider_profit.toFixed(2));
   platform_debt = parseFloat(platform_debt.toFixed(2));
+  console.log(`[CALC_DEBUG] Before rounding - Rider profit: ${original_rider_profit}, Platform debt: ${original_platform_debt}`);
+  console.log(`[CALC_DEBUG] After rounding - Rider profit: ${rider_profit}, Platform debt: ${platform_debt}`);
 
   return {
     tx_id,

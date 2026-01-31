@@ -1,182 +1,189 @@
-# Sidekick
+# Sidekick - Ride-Sharing Driver Financial Tracker
 
-A secure, multi-tenant SaaS platform for ride-sharing drivers to track transactions and expenses with enterprise-grade authentication and complete data isolation.
+## Introduction of the System
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![React Native](https://img.shields.io/badge/react%20native-0.70+-blue.svg)](https://reactnative.dev/)
+Sidekick is a secure, multi-tenant SaaS platform designed specifically for ride-sharing drivers to efficiently track their transactions and expenses. The system provides enterprise-grade authentication and complete data isolation between driver accounts, ensuring privacy and security. Built as a cross-platform mobile application with a Django REST Framework backend, Sidekick enables drivers to monitor their earnings, manage expenses, and maintain financial records through automated SMS processing and manual entry capabilities.
 
-## 🚀 Quick Start
+The platform addresses the common challenges faced by ride-sharing drivers, including inconsistent income tracking, expense management, and the need for accurate financial reporting. By leveraging SMS integration with popular ride-sharing platforms like Uber, Bolt, and Yango, Sidekick automates transaction recording while providing a user-friendly interface for manual adjustments and comprehensive financial analytics.
 
-Get the full stack running in 5 minutes:
+## User Requirements Definition
 
-### Backend
+### Primary Users
+- **Ride-Sharing Drivers**: Individual drivers who need to track income from multiple platforms and manage business expenses.
+
+### User Stories
+1. As a driver, I want to automatically capture ride earnings from SMS notifications so that I don't have to manually enter each transaction.
+2. As a driver, I want to manually add expenses (fuel, maintenance, tolls) so that I can track all business costs.
+3. As a driver, I want to view my daily/weekly/monthly earnings summary so that I can monitor my income trends.
+4. As a driver, I want to categorize my expenses so that I can understand where my money is going.
+5. As a driver, I want to set financial goals and track progress so that I can plan my earnings targets.
+6. As a driver, I want my data to be completely private and secure so that other drivers cannot access my information.
+7. As a driver, I want the app to work offline and sync when connected so that I can use it in areas with poor network coverage.
+
+### Functional Requirements
+- User registration and authentication
+- SMS permission and automated transaction processing
+- Manual transaction and expense entry
+- Financial dashboard with summaries and analytics
+- Transaction history with filtering and search
+- Expense categorization and reporting
+- Data export capabilities
+- Settings management for app preferences
+
+### Non-Functional Requirements
+- Security: Enterprise-grade authentication with JWT tokens
+- Performance: Real-time data synchronization
+- Usability: Intuitive mobile interface
+- Reliability: Offline functionality with conflict resolution
+- Privacy: Complete data isolation between users
+- Scalability: Multi-tenant architecture supporting multiple drivers
+
+## System Requirements Specification
+
+### Functional Requirements
+
+#### Authentication & Security
+- **FR1**: User registration with email verification
+- **FR2**: JWT-based authentication with automatic token refresh
+- **FR3**: Secure password hashing using Argon2
+- **FR4**: Complete data isolation between user accounts
+- **FR5**: HTTPS encryption for all data transmission
+
+#### Transaction Management
+- **FR6**: Automated SMS processing for ride-sharing platforms (Uber, Bolt, Yango)
+- **FR7**: Manual transaction entry with validation
+- **FR8**: Transaction categorization and tagging
+- **FR9**: Transaction editing and deletion capabilities
+- **FR10**: Duplicate transaction prevention
+
+#### Expense Tracking
+- **FR11**: Manual expense entry with categories
+- **FR12**: Expense categorization (fuel, maintenance, tolls, etc.)
+- **FR13**: Expense history with filtering options
+
+#### Analytics & Reporting
+- **FR14**: Real-time dashboard with earnings summaries
+- **FR15**: Period-based filtering (daily, weekly, monthly)
+- **FR16**: Financial goal setting and progress tracking
+- **FR17**: Data export functionality
+
+#### Mobile Features
+- **FR18**: Cross-platform compatibility (iOS/Android)
+- **FR19**: Offline data storage and synchronization
+- **FR20**: Push notifications for important updates
+- **FR21**: Theme customization (light/dark mode)
+
+### Non-Functional Requirements
+
+#### Performance
+- **NFR1**: App startup time < 3 seconds
+- **NFR2**: SMS processing < 2 seconds per message
+- **NFR3**: Dashboard load time < 1 second
+- **NFR4**: Support for 1000+ transactions per user
+
+#### Security
+- **NFR5**: End-to-end encryption for sensitive data
+- **NFR6**: Rate limiting on authentication endpoints
+- **NFR7**: Secure storage of authentication tokens
+- **NFR8**: Regular security audits and updates
+
+#### Usability
+- **NFR9**: Intuitive navigation with tab-based interface
+- **NFR10**: Consistent design language across platforms
+- **NFR11**: Accessibility compliance (WCAG 2.1)
+- **NFR12**: Multi-language support (English primary)
+
+#### Reliability
+- **NFR13**: 99.9% uptime for backend services
+- **NFR14**: Offline functionality for core features
+- **NFR15**: Automatic data backup and recovery
+- **NFR16**: Error handling with user-friendly messages
+
+#### Scalability
+- **NFR17**: Horizontal scaling support for backend
+- **NFR18**: Database optimization for large datasets
+- **NFR19**: CDN integration for static assets
+
+#### Compatibility
+- **NFR20**: iOS 12+ and Android 8+ support
+- **NFR21**: React Native 0.70+ compatibility
+- **NFR22**: Django 4.0+ backend framework
+
+## Technology Stack
+
+- **Backend**: Django REST Framework, PostgreSQL
+- **Frontend**: React Native, Expo
+- **Authentication**: JWT with automatic refresh
+- **Database**: PostgreSQL with multi-tenant isolation
+- **Deployment**: Railway/Render (backend), EAS Build (mobile)
+- **Security**: Argon2 hashing, HTTPS, CORS
+
+## Installation and Setup
+
+### Prerequisites
+- Python 3.8+
+- Node.js 16+
+- Expo CLI
+- PostgreSQL (for production)
+
+### Backend Setup
 ```bash
 cd backend
-python -m venv venv && source venv/bin/activate  # Windows: venv\Scripts\activate
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
 
-### Frontend
+### Mobile Setup
 ```bash
 cd mobile
 npm install
-cp .env.example .env  # Update EXPO_PUBLIC_API_URL
+cp .env.example .env
 npm start
 ```
 
-### Validation
+## API Documentation
+
+Complete API documentation is available in `docs/api.md`, including endpoints for:
+- Authentication (register, login, refresh)
+- Transaction management (CRUD operations)
+- Expense tracking
+- User settings
+
+## Testing
+
+Run the validation script to ensure proper setup:
 ```bash
 bash validate-setup.sh
 ```
 
-## 📖 Documentation
+## Deployment
 
-Complete documentation is available in the [docs/](docs/) directory:
+- **Backend**: Deploy to Railway, Render, or Heroku
+- **Mobile**: Use EAS Build for App Store and Play Store distribution
+- **Database**: Managed PostgreSQL instance
 
-- **[📋 Overview](docs/index.md)** - Project overview and documentation guide
-- **[🏗️ Architecture](docs/architecture.md)** - System design and data flow
-- **[🔌 API Reference](docs/api.md)** - Complete REST API documentation
-- **[💻 Development](docs/development.md)** - Setup, coding standards, and workflows
-- **[🚀 Deployment](docs/deployment.md)** - Production deployment guides
-- **[🤝 Contributing](docs/contributing.md)** - Contribution guidelines
-
-## 🎯 Features
-
-- **🔐 Enterprise Security**: JWT authentication with hardware-encrypted tokens
-- **🛡️ Data Isolation**: Complete separation between driver accounts
-- **📱 Cross-Platform**: Native iOS and Android apps
-- **⚡ Real-time Sync**: Live data synchronization
-- **📊 Analytics**: Comprehensive financial tracking
-- **🔄 Auto Token Refresh**: Seamless authentication experience
-
-## 🏛️ Technology Stack
-
-- **Backend**: Django REST Framework + PostgreSQL
-- **Frontend**: React Native + Expo
-- **Authentication**: JWT with automatic refresh
-- **Security**: Argon2 password hashing, HTTPS, CORS
-- **Deployment**: Railway/Render (backend), EAS Build (mobile)
-
-## 🧪 Testing
-
-Test the authentication and data isolation:
-
-```bash
-# Register a driver
-curl -X POST http://localhost:8000/api/auth/register/ \
-  -H "Content-Type: application/json" \
-  -d '{"email": "driver@example.com", "username": "driver@example.com", "password": "SecurePass123", "password2": "SecurePass123"}'
-
-# Login and get tokens
-curl -X POST http://localhost:8000/api/auth/login/ \
-  -H "Content-Type: application/json" \
-  -d '{"username": "driver@example.com", "password": "SecurePass123"}'
-
-# Access protected data
-curl -X GET http://localhost:8000/api/transactions/ \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
-
-## 🚢 Deployment
-
-- **Backend**: Railway, Render, or Heroku
-- **Database**: PostgreSQL (managed)
-- **Frontend**: EAS Build → App Store & Play Store
-- **CDN**: Automatic static asset optimization
-
-## ⚠️ Known Issues & Pitfalls
-
-### High-Risk Issues
-
-1. **SMS Processing State Gap**
-   - SMS service creates transactions in backend but doesn't update Redux store
-   - **Impact**: Users see stale data until manual sync or app restart
-   - **Fix**: Update Redux store on SMS processing success
-
-2. **Settings Loading Race Condition**
-   - Critical features (SMS checker) use default settings until settings screen loads
-   - **Impact**: SMS processing disabled on app restart even if user enabled it
-   - **Fix**: Load settings at app startup, not screen visit
-
-3. **Broad Redux Selectors Performance**
-   - Components re-render on any state change due to selecting entire slices
-   - **Impact**: Unnecessary re-renders, battery drain, poor performance
-   - **Fix**: Use specific selectors (e.g., `state.data.summary` instead of `state.data`)
-
-4. **SMS Duplicate Transactions** ✅ **FIXED**
-   - **Was**: No uniqueness checking before API submission
-   - **Impact**: Same SMS processed multiple times creates duplicate transactions
-   - **Fix**: Added `tx_id` uniqueness checking before API calls using Redux store lookup
-
-5. **Silent Error Handling** ✅ **FIXED**
-   - **Was**: Some API failures are caught but not reported to user
-   - **Impact**: Users unaware of failed operations, data loss
-   - **Fix**: Added toast notifications for SMS processing failures with user-friendly messages
-
-6. **Permission Cache Invalidation** ✅ **FIXED**
-   - **Was**: Cached permission status never re-validated after initial grant
-   - **Impact**: App thinks it has permission even after user revokes in Android settings
-   - **Fix**: Added permission re-validation using `PermissionsAndroid.check()` before relying on cache
-
-7. **Summary Calculation Inconsistencies**
-   - Local Redux summary not updated on edits/deletes, only React Query
-   - **Impact**: Dashboard shows wrong totals until data refresh
-   - **Fix**: Update Redux summary on all mutations
-
-8. **No Offline Conflict Resolution**
-   - No strategy for handling backend changes while app offline
-   - **Impact**: Data conflicts on sync, potential overwrites
-   - **Fix**: Implement conflict resolution and merge strategies
-
-### Medium-Risk Issues
-
-9. **Token Refresh Without Rotation**
-   - Refresh tokens not updated when new ones issued
-   - **Impact**: Potential reuse of expired refresh tokens
-   - **Fix**: Store new refresh tokens on refresh
-
-10. **Inefficient SMS Reading** ✅ **FIXED**
-    - **Was**: Always reads 50 SMS regardless of what's new
-    - **Impact**: Performance impact, battery drain
-    - **Fix**: Implemented incremental SMS processing using timestamp filtering
-
-### Security Issues
-
-11. **SMS Bridge Security** ✅ **FIXED**
-    - **Was**: Unauthenticated POST endpoint for SMS data
-    - **Impact**: Potential for malicious SMS injection
-    - **Fix**: Removed SMS bridge; all processing now occurs securely within authenticated mobile app
-
-12. **No Rate Limiting**
-    - No protection against brute force on auth endpoints
-    - **Impact**: Vulnerable to automated attacks
-    - **Fix**: Implement rate limiting (Django Ratelimit or similar)
-
-## 🤝 Contributing
-
-We welcome contributions! See our [Contributing Guide](docs/contributing.md) for details.
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Add tests
+3. Make changes following the coding standards
+4. Add tests for new features
 5. Submit a pull request
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
-## 🆘 Support
+## Support
 
-- 📖 **[Documentation](docs/)** - Complete guides and API reference
-- 🐛 [Issues](https://github.com/your-repo/issues) - Bug reports and feature requests
-- 💬 [Discussions](https://github.com/your-repo/discussions) - Q&A and general discussion
+For support and questions:
+- Documentation: `docs/` directory
+- Issues: GitHub Issues
+- Email: [project maintainer contact]
 
 ---
 
-**Ready to help drivers take control of their earnings?** 🚗💰
-
-*Built with ❤️ for ride-sharing drivers worldwide*
+**Empowering ride-sharing drivers with financial control and transparency.**

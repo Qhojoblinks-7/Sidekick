@@ -2,7 +2,7 @@ import logging
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, BasePermission
+from rest_framework.permissions import IsAuthenticated, BasePermission, AllowAny
 from django.db.models import Sum
 from django.contrib.auth.models import User
 from .models import Transaction, Expense
@@ -60,43 +60,79 @@ class ExpenseViewSet(viewsets.ModelViewSet):
 
 
 class DailySummaryView(APIView):
-    permission_classes = []  # Allow all for debug
-    
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        # For debug, use test user
-        from django.contrib.auth.models import User
-        test_user = User.objects.get(username='test@example.com')
-        logger.info(f"DailySummaryView get called by user: {test_user}")
+        logger.info(f"DailySummaryView get called by user: {request.user}")
+        
+        # Check if user is authenticated
+        if not request.user or not request.user.is_authenticated:
+            return Response({
+                "net_profit": 0,
+                "total_debt": 0,
+                "expenses": 0,
+                "yango_income": 0,
+                "bolt_income": 0,
+                "yango_debt": 0,
+                "bolt_debt": 0,
+            })
+        
         today = date.today()
 
-        # Calculate Total Profit from Trips (user's data only)
-        profit_query = Transaction.objects.filter(user=test_user, created_at__date=today).aggregate(
-            Sum("rider_profit")
-        )
-        total_profit = profit_query["rider_profit__sum"] or 0
-        logger.info(f"[CALC_DEBUG] DailySummary - Total profit query result: {profit_query}, total_profit: {total_profit}")
+        try:
+            # Calculate Total Profit from Trips (user's data only)
+            profit_query = Transaction.objects.filter(user=request.user, created_at__date=today).aggregate(
+                Sum("rider_profit")
+            )
+            total_profit = profit_query["rider_profit__sum"] or 0
+            logger.info(f"[CALC_DEBUG] DailySummary - Total profit query result: {profit_query}, total_profit: {total_profit}")
 
-        # Calculate Total Expenses (user's data only)
-        expenses_query = Expense.objects.filter(user=test_user, created_at__date=today).aggregate(Sum("amount"))
-        total_expenses = expenses_query["amount__sum"] or 0
-        logger.info(f"[CALC_DEBUG] DailySummary - Total expenses query result: {expenses_query}, total_expenses: {total_expenses}")
+            # Calculate Total Expenses (user's data only)
+            expenses_query = Expense.objects.filter(user=request.user, created_at__date=today).aggregate(Sum("amount"))
+            total_expenses = expenses_query["amount__sum"] or 0
+            logger.info(f"[CALC_DEBUG] DailySummary - Total expenses query result: {expenses_query}, total_expenses: {total_expenses}")
 
-        # Calculate Total Debt owed to Bolt/Yango (user's data only)
-        debt_query = Transaction.objects.filter(user=test_user, created_at__date=today).aggregate(
-            Sum("platform_debt")
-        )
-        total_debt = debt_query["platform_debt__sum"] or 0
-        logger.info(f"[CALC_DEBUG] DailySummary - Total debt query result: {debt_query}, total_debt: {total_debt}")
+            # Calculate Total Debt owed to Bolt/Yango (user's data only)
+            debt_query = Transaction.objects.filter(user=request.user, created_at__date=today).aggregate(
+                Sum("platform_debt")
+            )
+            total_debt = debt_query["platform_debt__sum"] or 0
+            logger.info(f"[CALC_DEBUG] DailySummary - Total debt query result: {debt_query}, total_debt: {total_debt}")
 
-        net_profit = float(total_profit - total_expenses)
-        logger.info(f"[CALC_DEBUG] DailySummary - Final calculations: net_profit={net_profit}, total_debt={float(total_debt)}, expenses={float(total_expenses)}")
-        return Response(
-            {
+            # Calculate incomes per platform
+            yango_income_query = Transaction.objects.filter(user=request.user, platform='YANGO', created_at__date=today).aggregate(Sum("rider_profit"))
+            yango_income = yango_income_query["rider_profit__sum"] or 0
+            bolt_income_query = Transaction.objects.filter(user=request.user, platform='BOLT', created_at__date=today).aggregate(Sum("rider_profit"))
+            bolt_income = bolt_income_query["rider_profit__sum"] or 0
+
+            # Calculate debts per platform
+            yango_debt_query = Transaction.objects.filter(user=request.user, platform='YANGO', created_at__date=today).aggregate(Sum("platform_debt"))
+            yango_debt = yango_debt_query["platform_debt__sum"] or 0
+            bolt_debt_query = Transaction.objects.filter(user=request.user, platform='BOLT', created_at__date=today).aggregate(Sum("platform_debt"))
+            bolt_debt = bolt_debt_query["platform_debt__sum"] or 0
+
+            net_profit = float(total_profit - total_expenses)
+            logger.info(f"[CALC_DEBUG] DailySummary - Final calculations: net_profit={net_profit}, total_debt={float(total_debt)}, expenses={float(total_expenses)}")
+            return Response({
                 "net_profit": net_profit,
                 "total_debt": float(total_debt),
                 "expenses": float(total_expenses),
-            }
-        )
+                "yango_income": float(yango_income),
+                "bolt_income": float(bolt_income),
+                "yango_debt": float(yango_debt),
+                "bolt_debt": float(bolt_debt),
+            })
+        except Exception as e:
+            logger.error(f"[CALC_DEBUG] DailySummary - Error: {e}")
+            return Response({
+                "net_profit": 0,
+                "total_debt": 0,
+                "expenses": 0,
+                "yango_income": 0,
+                "bolt_income": 0,
+                "yango_debt": 0,
+                "bolt_debt": 0,
+            })
 
 
 class PeriodSummaryView(APIView):

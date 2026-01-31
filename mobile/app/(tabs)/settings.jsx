@@ -40,6 +40,7 @@ import {
 import { useAuth } from "../../hooks/useAuth";
 
 export default function Settings() {
+  console.log('Settings screen rendered');
   const { colors } = useContext(ThemeContext);
   const dispatch = useDispatch();
   const router = useRouter();
@@ -300,9 +301,8 @@ export default function Settings() {
     },
     header: {
       paddingHorizontal: 16,
-      paddingTop: 24,
+      paddingTop: 56,
       paddingBottom: 16,
-      marginBottom: 32,
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
@@ -580,6 +580,7 @@ export default function Settings() {
           label="SMS Capture"
           value={smsEnabled ? "Enabled" : "Disabled"}
           onPress={handleSmsToggle}
+          marginBottom={50}
         />
 
         {/* Daily Target Modal */}

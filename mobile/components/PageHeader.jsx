@@ -1,8 +1,9 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeContext } from '../contexts/ThemeContext';
 import PeriodFilter from './PeriodFilter.jsx';
+import { format } from 'date-fns';
 
 const PageHeader = ({
   dropdownVisible,
@@ -13,9 +14,17 @@ const PageHeader = ({
 }) => {
   const { colors } = useContext(ThemeContext);
 
+  // Format the date based on selected period
+  const formattedDate = useMemo(() => {
+    if (period.startDate && period.endDate) {
+      return format(period.startDate, 'MMM d, yyyy');
+    }
+    return format(new Date(), 'MMM d, yyyy');
+  }, [period.startDate, period.endDate]);
+
   const styles = StyleSheet.create({
     header: {
-      marginBottom: 32,
+      marginBottom: 24,
       paddingHorizontal: 16,
     },
     headerRow: {
@@ -23,106 +32,64 @@ const PageHeader = ({
       justifyContent: "space-between",
       alignItems: "center",
     },
-    calendarButton: {
+    dateText: {
+      color: colors.textMain,
+      fontSize: 18,
+      fontWeight: "600",
+    },
+    filterButton: {
+      flexDirection: "row",
+      alignItems: "center",
       backgroundColor: colors.card,
       paddingHorizontal: 12,
       paddingVertical: 8,
       borderRadius: 20,
       borderWidth: 1,
       borderColor: colors.border,
-      marginRight: 10,
-    },
-    filterButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: colors.card,
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: colors.border,
     },
     filterText: {
       color: colors.textMain,
-      fontSize: 12,
-      fontWeight: "bold",
-      marginLeft: 4,
-    },
-    title: {
-      color: colors.textMuted,
-      fontSize: 12,
-      fontWeight: "bold",
-      textTransform: "uppercase",
-      letterSpacing: 2,
-    },
-    mainTitle: {
-      color: colors.textMain,
-      fontSize: 30,
-      fontWeight: "900",
-    },
-    rightContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    filterContainer: {
-      position: "relative",
+      fontSize: 14,
+      fontWeight: "600",
+      marginRight: 4,
     },
   });
-
   return (
-    <View style={styles.header}>
       <View style={styles.headerRow}>
-        <Text style={styles.mainTitle}>Dashboard</Text>
-        <View style={styles.rightContainer}>
+        <Text style={styles.dateText}>{formattedDate}</Text>
+        <View style={styles.filterContainer}>
           <TouchableOpacity
-            onPress={() => {
-              setDropdownVisible(false);
-              setCustomDateModalVisible(true);
-            }}
-            style={styles.calendarButton}
+            onPress={() => setDropdownVisible(!dropdownVisible)}
+            style={styles.filterButton}
           >
-            <Ionicons name="calendar-outline" size={20} color={colors.textMain} />
-          </TouchableOpacity>
-          <View style={styles.filterContainer}>
-            <TouchableOpacity
-              onPress={() => setDropdownVisible(!dropdownVisible)}
-              style={styles.filterButton}
-            >
-              <Ionicons
-                name="filter-outline"
-                size={20}
-                color={colors.textMain}
-              />
-              <Text style={styles.filterText}>
-                {period.type === "today"
-                  ? "Today"
-                  : period.type === "week"
-                    ? "This Week"
-                    : period.type === "month"
-                      ? "This Month"
-                      : period.type === "year"
-                        ? "This Year"
-                        : period.type === "custom"
-                          ? "Custom Date"
-                          : "Filter"}
-              </Text>
-              <Ionicons
-                name={dropdownVisible ? "chevron-up" : "chevron-down"}
-                size={16}
-                color={colors.textMain}
-              />
-            </TouchableOpacity>
-            <PeriodFilter
-              dropdownVisible={dropdownVisible}
-              period={period}
-              onPeriodChange={onPeriodChange}
-              setDropdownVisible={setDropdownVisible}
-              setCustomDateModalVisible={setCustomDateModalVisible}
+            <Text style={styles.filterText}>
+              {period.type === "today"
+                ? "Today"
+                : period.type === "week"
+                  ? "This Week"
+                  : period.type === "month"
+                    ? "This Month"
+                    : period.type === "year"
+                      ? "This Year"
+                      : period.type === "custom"
+                        ? "Custom"
+                        : "Filter"}
+            </Text>
+            <Ionicons
+              name="ellipsis-vertical"
+              size={20}
+              color={colors.textMain}
             />
-          </View>
+          </TouchableOpacity>
+          <PeriodFilter
+            dropdownVisible={dropdownVisible}
+            period={period}
+            onPeriodChange={onPeriodChange}
+            setDropdownVisible={setDropdownVisible}
+            setCustomDateModalVisible={setCustomDateModalVisible}
+          />
         </View>
       </View>
-    </View>
   );
 };
 

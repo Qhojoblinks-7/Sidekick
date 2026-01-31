@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useRef, useEffect } from 'react';
 import { 
   Modal, 
   View, 
@@ -20,15 +20,25 @@ const CustomDateModal = ({
 }) => {
   const { colors, theme } = useContext(ThemeContext);
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const hasShownPicker = useRef(false);
 
   /**
    * ANDROID LOGIC: 
    * Uses the native Imperative API to open the system dialog directly.
    */
   const showAndroidPicker = () => {
+    // Prevent multiple picker opens
+    if (hasShownPicker.current) {
+      console.log('[DEBUG] hasShownPicker is true, preventing duplicate picker open');
+      return;
+    }
+    hasShownPicker.current = true;
+    console.log('[DEBUG] showAndroidPicker called with customDate:', customDate ? customDate.toISOString() : 'null');
+
     DateTimePickerAndroid.open({
       value: customDate || new Date(),
       onChange: (event, selectedDate) => {
+        console.log('[DEBUG] DateTimePicker onChange event:', event.type, selectedDate ? selectedDate.toISOString() : 'null');
         // Close our internal state trigger
         setCustomDateModalVisible(false);
         
@@ -43,6 +53,24 @@ const CustomDateModal = ({
       display: 'calendar', // Your preferred style
     });
   };
+
+  // Reset the ref when modal visibility changes
+  useEffect(() => {
+    console.log('[DEBUG] useEffect triggered - customDateModalVisible:', customDateModalVisible, 'customDate:', customDate ? customDate.toISOString() : 'null');
+    if (customDateModalVisible) {
+      hasShownPicker.current = false;
+      console.log('[DEBUG] hasShownPicker reset to false');
+      // Small delay to ensure component is ready
+      const timer = setTimeout(() => {
+        console.log('[DEBUG] setTimeout callback executed, calling showAndroidPicker');
+        showAndroidPicker();
+      }, 100);
+      return () => {
+        console.log('[DEBUG] useEffect cleanup - clearing timeout');
+        clearTimeout(timer);
+      };
+    }
+  }, [customDateModalVisible, customDate]);
 
   /**
    * iOS LOGIC:
@@ -59,10 +87,9 @@ const CustomDateModal = ({
     setCustomDateModalVisible(false);
   };
 
-  // Trigger Android native picker if modal becomes visible
+  // Don't render anything on Android (picker is native)
   if (Platform.OS === 'android' && customDateModalVisible) {
-    showAndroidPicker();
-    return null; // Don't render a Modal on Android
+    return null;
   }
 
   // iOS Rendering

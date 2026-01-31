@@ -1,0 +1,12 @@
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java b/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java
+index f78f1fe..ae7bf70 100644
+--- a/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java
++++ b/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java
+@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
+ import android.os.Bundle;
+ import android.telephony.SmsMessage;
+ import android.util.Log;
++import android.os.Build;
+ 
+ import androidx.core.content.ContextCompat;
+ 

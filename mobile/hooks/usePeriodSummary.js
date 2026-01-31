@@ -7,10 +7,14 @@ const usePeriodSummary = (period) => {
     queryFn: async () => {
       const response = await apiCall(`/api/summary/period/?start_date=${period.startDate.toISOString()}&end_date=${period.endDate.toISOString()}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch period summary');
+        const errorText = await response.text();
+        console.error('Period summary API error:', response.status, errorText);
+        throw new Error(`Failed to fetch period summary: ${response.status}`);
       }
       return response.json();
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
   });
 };
 

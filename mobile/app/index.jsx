@@ -5,6 +5,7 @@ import { AuthContext } from '../contexts/AuthContext';
 import { ThemeContext } from '../contexts/ThemeContext';
 
 export default function RootIndex() {
+  console.log('RootIndex: Component rendered');
   const { isAuthenticated, isLoading } = useContext(AuthContext);
   const { colors } = useContext(ThemeContext);
   const router = useRouter();

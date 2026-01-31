@@ -14,6 +14,7 @@ export const GoalProgressBar = ({ current }) => {
       backgroundColor: colors.card,
       padding: 16,
       marginHorizontal: 16,
+      marginTop: 16,
       borderRadius: 32,
       borderWidth: 1,
       borderColor: colors.border,

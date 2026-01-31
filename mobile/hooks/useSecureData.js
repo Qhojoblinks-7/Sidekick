@@ -5,7 +5,7 @@ export const useSecureTransactions = () => {
   return useQuery({
     queryKey: ['transactions'],
     queryFn: async () => {
-      const response = await apiCall('/transactions/', {
+      const response = await apiCall('/api/transactions/', {
         method: 'GET',
       });
       if (!response.ok) {
@@ -21,7 +21,7 @@ export const useSecureExpenses = () => {
   return useQuery({
     queryKey: ['expenses'],
     queryFn: async () => {
-      const response = await apiCall('/expenses/', {
+      const response = await apiCall('/api/expenses/', {
         method: 'GET',
       });
       if (!response.ok) {
@@ -37,7 +37,7 @@ export const useSecureDailySummary = () => {
   return useQuery({
     queryKey: ['daily-summary'],
     queryFn: async () => {
-      const response = await apiCall('/summary/daily/', {
+      const response = await apiCall('/api/summary/daily/', {
         method: 'GET',
       });
       if (!response.ok) {

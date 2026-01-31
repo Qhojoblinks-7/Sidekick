@@ -1,16 +1,17 @@
-import { PermissionsAndroid, DeviceEventEmitter } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import SmsAndroid from 'react-native-get-sms-android';
-import { parseMoMoSMS } from '../utils/momoTracker';
-import { apiCall } from './apiService';
-import { store } from '../store/store';
-import { addTransaction, setSummary } from '../store/store';
+import { PermissionsAndroid, DeviceEventEmitter } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { startReadSMS } from "@maniac-tech/react-native-expo-read-sms";
+import SmsAndroid from "react-native-get-sms-android";
+import { parseMoMoSMS } from "../utils/momoTracker";
+import { apiCall } from "./apiService";
+import { store } from "../store/store";
+import { addTransaction, setSummary } from "../store/store";
 
 // Counter for debugging permission requests
 let permissionRequestCount = 0;
 
 // Key for storing last processed SMS timestamp
-const LAST_PROCESSED_SMS_KEY = 'lastProcessedSMSTimestamp';
+const LAST_PROCESSED_SMS_KEY = "lastProcessedSMSTimestamp";
 
 // Function to get last processed SMS timestamp
 export const getLastProcessedSMSTimestamp = async () => {
@@ -18,7 +19,7 @@ export const getLastProcessedSMSTimestamp = async () => {
     const timestamp = await AsyncStorage.getItem(LAST_PROCESSED_SMS_KEY);
     return timestamp ? parseInt(timestamp) : null;
   } catch (error) {
-    console.error('Error getting last processed SMS timestamp:', error);
+    console.error("Error getting last processed SMS timestamp:", error);
     return null;
   }
 };
@@ -28,131 +29,172 @@ export const setLastProcessedSMSTimestamp = async (timestamp) => {
   try {
     await AsyncStorage.setItem(LAST_PROCESSED_SMS_KEY, timestamp.toString());
   } catch (error) {
-    console.error('Error setting last processed SMS timestamp:', error);
+    console.error("Error setting last processed SMS timestamp:", error);
   }
 };
 
 // Helper function to check if a transaction with the given tx_id already exists in Redux store
 const isTransactionDuplicate = (tx_id) => {
   const state = store.getState();
-  return state.data.transactions.some(tx => tx.tx_id === tx_id);
+  return state.data.transactions.some((tx) => tx.tx_id === tx_id);
 };
 
 // Function to request SMS permissions
 export const requestSMSPermissions = async () => {
+  console.log("requestSMSPermissions called");
   try {
     // First, check current permission status to handle revocations
-    const currentStatus = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_SMS);
-    console.log('Current SMS permission status:', currentStatus);
+    const currentStatus = await PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.READ_SMS,
+    );
+    console.log("Current SMS permission status:", currentStatus);
 
     if (currentStatus) {
       // Permission is currently granted, cache it
+      console.log("Permission currently granted, caching as true");
       try {
-        await AsyncStorage.setItem('smsPermissionGranted', 'true');
+        await AsyncStorage.setItem("smsPermissionGranted", "true");
       } catch (err) {
-        console.warn('Error caching permission:', err);
+        console.warn("Error caching permission:", err);
       }
       return true;
     } else {
       // Permission is not granted, check cache to see if it was previously granted (revoked)
-      const cachedStatus = await AsyncStorage.getItem('smsPermissionGranted');
-      if (cachedStatus === 'true') {
+      const cachedStatus = await AsyncStorage.getItem("smsPermissionGranted");
+      console.log("Cached permission status:", cachedStatus);
+      if (cachedStatus === "true") {
         // Permission was revoked, update cache
-        console.log('SMS permission was revoked, updating cache');
+        console.log("SMS permission was revoked, updating cache to false");
         try {
-          await AsyncStorage.setItem('smsPermissionGranted', 'false');
+          await AsyncStorage.setItem("smsPermissionGranted", "false");
         } catch (err) {
-          console.warn('Error updating cached permission:', err);
+          console.warn("Error updating cached permission:", err);
         }
         return false;
       }
       // Permission not granted and not previously granted, request it
+      console.log("Permission not granted and not cached, will request");
     }
   } catch (err) {
-    console.warn('Error checking current permission status:', err);
+    console.warn("Error checking current permission status:", err);
     // Fall back to cached status or request
     try {
-      const cachedStatus = await AsyncStorage.getItem('smsPermissionGranted');
+      const cachedStatus = await AsyncStorage.getItem("smsPermissionGranted");
       if (cachedStatus !== null) {
-        const isGranted = cachedStatus === 'true';
-        console.log('Falling back to cached SMS permission status:', isGranted);
+        const isGranted = cachedStatus === "true";
+        console.log("Falling back to cached SMS permission status:", isGranted);
         return isGranted;
       }
     } catch (cacheErr) {
-      console.warn('Error reading cached permission:', cacheErr);
+      console.warn("Error reading cached permission:", cacheErr);
     }
   }
 
   permissionRequestCount++;
-  console.log(`About to request SMS permission (attempt ${permissionRequestCount})`);
+  console.log(
+    `About to request SMS permission (attempt ${permissionRequestCount})`,
+  );
   try {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.READ_SMS,
       {
-        title: 'SMS Permission',
-        message: 'This app needs access to your SMS to read transaction messages.',
-        buttonNeutral: 'Ask Me Later',
-        buttonNegative: 'Cancel',
-        buttonPositive: 'OK',
+        title: "SMS Permission",
+        message:
+          "This app needs access to your SMS to read transaction messages.",
+        buttonNeutral: "Ask Me Later",
+        buttonNegative: "Cancel",
+        buttonPositive: "OK",
       },
     );
-    console.log('Permission granted result:', granted);
+    console.log("Permission request result:", granted);
     const isGranted = granted === PermissionsAndroid.RESULTS.GRANTED;
+    console.log("Is permission granted:", isGranted);
     // Cache the result
     try {
-      await AsyncStorage.setItem('smsPermissionGranted', isGranted.toString());
+      await AsyncStorage.setItem("smsPermissionGranted", isGranted.toString());
     } catch (err) {
-      console.warn('Error caching permission:', err);
+      console.warn("Error caching permission:", err);
     }
     return isGranted;
   } catch (err) {
-    console.warn('Error in requestSMSPermissions:', err);
+    console.warn("Error in requestSMSPermissions:", err);
     // Cache as false
     try {
-      await AsyncStorage.setItem('smsPermissionGranted', 'false');
+      await AsyncStorage.setItem("smsPermissionGranted", "false");
     } catch (cacheErr) {
-      console.warn('Error caching permission:', cacheErr);
+      console.warn("Error caching permission:", cacheErr);
     }
     return false;
   }
 };
 
-// Function to read SMS messages
+// Function to read SMS messages (deprecated, using only for manual sync if needed)
 export const readSMS = async (hasConsent = true, minDate = null) => {
+  console.log(
+    "[DEBUG] readSMS called with hasConsent:",
+    hasConsent,
+    "minDate:",
+    minDate,
+  );
   try {
+    console.log("[DEBUG] SmsAndroid object:", SmsAndroid);
     if (!hasConsent) {
-      throw new Error('SMS consent not given');
+      console.log("[DEBUG] SMS consent not given");
+      throw new Error("SMS consent not given");
     }
     const hasPermission = await requestSMSPermissions();
+    console.log("[DEBUG] Has permission:", hasPermission);
     if (!hasPermission) {
-      throw new Error('SMS permission not granted');
+      console.log("[DEBUG] SMS permission not granted");
+      throw new Error("SMS permission not granted");
     }
 
-    const options = {
-      box: 'inbox',
+    const filter = {
+      box: "inbox",
       maxCount: 50, // Read last 50 SMS or newer than minDate
     };
     if (minDate !== null) {
-      options.minDate = minDate;
+      filter.minDate = minDate;
+    }
+    console.log("[DEBUG] Filter:", filter);
+
+    if (!SmsAndroid || !SmsAndroid.list) {
+      console.log("[DEBUG] SmsAndroid not available");
+      throw new Error(
+        "SMS reading library not available. Please ensure you're using a development build or custom client.",
+      );
     }
 
-    const smsList = await new Promise((resolve, reject) => {
-      SmsAndroid.list(
-        JSON.stringify(options),
-        (fail) => {
-          reject(new Error(fail));
-        },
-        (count, smsList) => {
-          const messages = JSON.parse(smsList);
-          resolve(messages);
-        },
+    if (!SmsAndroid || typeof SmsAndroid.list !== "function") {
+      console.log("[DEBUG] SmsAndroid.list not a function");
+      throw new Error(
+        "SMS reading library not available. Please ensure you're using a development build or custom client.",
       );
+    }
+
+    console.log("[DEBUG] Calling SmsAndroid.list");
+    const smsList = await new Promise((resolve, reject) => {
+      SmsAndroid.list(filter, (error, smsList) => {
+        console.log(
+          "[DEBUG] SmsAndroid.list callback - error:",
+          error,
+          "smsList length:",
+          smsList ? smsList.length : 0,
+        );
+        if (error) {
+          reject(error);
+        } else {
+          resolve(smsList);
+        }
+      });
     });
+    console.log("[DEBUG] SMS list retrieved, length:", smsList.length);
 
     return smsList;
   } catch (error) {
-    if (!error.message.includes('permission')) {
-      console.error('Error reading SMS:', error);
+    console.log("[DEBUG] Error in readSMS:", error.message);
+    if (!error.message.includes("permission")) {
+      console.error("Error reading SMS:", error);
     }
     throw error;
   }
@@ -163,12 +205,14 @@ export const sendParsedSMSToAPI = async (parsedData) => {
   try {
     // Check if transaction with this tx_id already exists in Redux store
     if (isTransactionDuplicate(parsedData.tx_id)) {
-      console.log(`Skipping duplicate transaction with tx_id: ${parsedData.tx_id}`);
+      console.log(
+        `Skipping duplicate transaction with tx_id: ${parsedData.tx_id}`,
+      );
       return null; // Return null to indicate duplicate
     }
 
-    const response = await apiCall('/api/transactions/', {
-      method: 'POST',
+    const response = await apiCall("/api/transactions/", {
+      method: "POST",
       body: JSON.stringify(parsedData),
     });
 
@@ -180,7 +224,7 @@ export const sendParsedSMSToAPI = async (parsedData) => {
       throw new Error(`API call failed with status ${response.status}`);
     }
   } catch (error) {
-    console.error('Error sending parsed SMS to API:', error);
+    console.error("Error sending parsed SMS to API:", error);
     throw error;
   }
 };
@@ -190,14 +234,23 @@ export const isMoMoTransactionSMS = (sms) => {
   const body = sms.body.toLowerCase();
   console.log(`Checking SMS for MoMo pattern: ${body}`);
   // Check for presence of GHS (Ghana Cedis) and transaction keywords
-  const hasAmount = body.includes('ghs');
-  const hasTransactionKeyword = /\b(received|sent|transfer|payment|bought|charged|debited|credited)\b/.test(body);
-  const hasRef = body.includes('ref:') || body.includes('reference');
+  const hasAmount = body.includes("ghs");
+  const hasTransactionKeyword =
+    /\b(received|sent|transfer|payment|bought|charged|debited|credited)\b/.test(
+      body,
+    );
+  const hasRef = body.includes("ref:") || body.includes("reference");
   // Additional check for common MoMo patterns
-  const hasMoMoIndicator = body.includes('mobile money') || body.includes('momo') || body.includes('mtn');
+  const hasMoMoIndicator =
+    body.includes("mobile money") ||
+    body.includes("momo") ||
+    body.includes("mtn");
 
-  const isMoMo = hasAmount && (hasTransactionKeyword || hasRef || hasMoMoIndicator);
-  console.log(`SMS is MoMo transaction: ${isMoMo} (hasAmount: ${hasAmount}, hasTransactionKeyword: ${hasTransactionKeyword}, hasRef: ${hasRef}, hasMoMoIndicator: ${hasMoMoIndicator})`);
+  const isMoMo =
+    hasAmount && (hasTransactionKeyword || hasRef || hasMoMoIndicator);
+  console.log(
+    `SMS is MoMo transaction: ${isMoMo} (hasAmount: ${hasAmount}, hasTransactionKeyword: ${hasTransactionKeyword}, hasRef: ${hasRef}, hasMoMoIndicator: ${hasMoMoIndicator})`,
+  );
   return isMoMo;
 };
 
@@ -206,18 +259,33 @@ export const filterMoMoSMS = (smsList) => {
   return smsList.filter(isMoMoTransactionSMS);
 };
 
-// Function to read and process SMS (read, parse, and send to API)
+// Function to read and process SMS (deprecated, use live tracking instead)
 export const readAndProcessSMS = async (hasConsent = true) => {
+  console.log("[DEBUG] readAndProcessSMS called (deprecated)");
+
+  // Check if SMS reading is available
+  if (!SmsAndroid || typeof SmsAndroid.list !== "function") {
+    console.log("[DEBUG] SMS bulk reading not available - skipping");
+    return;
+  }
+
   const lastTimestamp = await getLastProcessedSMSTimestamp();
+  console.log("[DEBUG] Last timestamp:", lastTimestamp);
   const smsList = await readSMS(hasConsent, lastTimestamp);
+  console.log("[DEBUG] SMS list length:", smsList.length);
   const filteredSMS = filterMoMoSMS(smsList);
+  console.log("[DEBUG] Filtered MoMo SMS:", filteredSMS.length);
   let latestTimestamp = lastTimestamp || 0;
   for (const sms of filteredSMS) {
+    console.log("[DEBUG] Processing SMS date:", sms.date);
     const parsed = parseMoMoSMS(sms.body);
     if (parsed) {
+      console.log("[DEBUG] Parsed:", parsed);
       const result = await sendParsedSMSToAPI(parsed);
       if (result === null) {
-        console.log('Skipped duplicate transaction from SMS processing');
+        console.log(
+          "[DEBUG] Skipped duplicate transaction from SMS processing",
+        );
       }
     }
     // Update latest timestamp
@@ -228,51 +296,84 @@ export const readAndProcessSMS = async (hasConsent = true) => {
   // Set the last processed timestamp
   if (latestTimestamp > (lastTimestamp || 0)) {
     await setLastProcessedSMSTimestamp(latestTimestamp);
+    console.log("[DEBUG] Updated timestamp to:", latestTimestamp);
   }
 };
 
 // Live tracking listener
 export const startLiveTracking = (onNewTrip) => {
-  // Listen for the broadcast from the native side
-  const subscription = DeviceEventEmitter.addListener('onSMSReceived', async (data) => {
-    const message = JSON.parse(data);
-    const parsed = parseMoMoSMS(message.messageBody);
+  // Start listening for incoming SMS
+  startReadSMS(
+    async (address, body) => {
+      console.log("Received SMS from:", address, "Body:", body);
+      const parsed = parseMoMoSMS(body);
 
-    if (parsed) {
-      // Send to API and notify only if not a duplicate
-      try {
-        const result = await sendParsedSMSToAPI(parsed);
-        if (result !== null) {
-          onNewTrip(parsed);
+      if (parsed) {
+        // Send to API and notify only if not a duplicate
+        try {
+          const result = await sendParsedSMSToAPI(parsed);
+          if (result !== null) {
+            onNewTrip(parsed);
+          }
+        } catch (error) {
+          console.error("Error processing live SMS:", error);
         }
-      } catch (error) {
-        console.error('Error processing live SMS:', error);
       }
-    }
-  });
+    },
+    (error) => {
+      console.error("SMS read error:", error);
+    },
+  );
 
-  return () => subscription.remove();
+  // Return a function to stop, but the library may not have a stop method
+  return () => {
+    // If the library has a stop method, call it here
+    console.log("Stopping SMS tracking");
+  };
 };
 
 // Scanner for missed trips
 export const syncMissedTrips = async () => {
   try {
+    console.log("Starting syncMissedTrips");
+
+    // Check if SMS reading is available (not supported in Expo)
+    if (!SmsAndroid || typeof SmsAndroid.list !== "function") {
+      console.log("SMS bulk reading not available in this environment (Expo limitation)");
+      console.log("Relying on live SMS tracking for new transactions");
+      return [];
+    }
+
     const lastTimestamp = await getLastProcessedSMSTimestamp();
+    console.log("Last processed timestamp:", lastTimestamp);
     const smsList = await readSMS(true, lastTimestamp);
+    console.log("SMS list length:", smsList.length);
     const newTrips = [];
     let latestTimestamp = lastTimestamp || 0;
 
     for (const sms of smsList) {
+      console.log(
+        "Processing SMS:",
+        sms.body.substring(0, 100),
+        "... Date:",
+        sms.date,
+      );
       const parsed = parseMoMoSMS(sms.body);
       if (parsed) {
+        console.log("Parsed SMS:", parsed);
         try {
           const result = await sendParsedSMSToAPI(parsed);
           if (result !== null) {
             newTrips.push(parsed);
+            console.log("Added new trip:", parsed.tx_id);
+          } else {
+            console.log("Skipped duplicate trip:", parsed.tx_id);
           }
         } catch (error) {
-          console.error('Error sending missed trip to API:', error);
+          console.error("Error sending missed trip to API:", error);
         }
+      } else {
+        console.log("SMS not parsed as MoMo transaction");
       }
       // Update latest timestamp
       if (sms.date > latestTimestamp) {
@@ -280,18 +381,25 @@ export const syncMissedTrips = async () => {
       }
     }
 
+    console.log("New trips found:", newTrips.length);
     // Set the last processed timestamp
     if (latestTimestamp > (lastTimestamp || 0)) {
       await setLastProcessedSMSTimestamp(latestTimestamp);
+      console.log("Updated last processed timestamp to:", latestTimestamp);
     }
 
     return newTrips;
   } catch (error) {
-    if (error.message.includes('permission')) {
+    if (error.message.includes("permission")) {
+      console.log("Permission denied for SMS access");
       // Permission denied, return empty array silently
       return [];
     }
-    console.error('Error syncing missed trips:', error);
+    if (error.message.includes("SMS reading library not available")) {
+      console.log("SMS bulk reading not supported in Expo - using live tracking only");
+      return [];
+    }
+    console.error("Error syncing missed trips:", error);
     throw error; // Re-throw other errors
   }
 };

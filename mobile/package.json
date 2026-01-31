@@ -1,12 +1,15 @@
 {
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
+    "@maniac-tech/react-native-expo-read-sms": "^9.0.2-alpha",
     "@react-native-async-storage/async-storage": "^2.2.0",
-    "@react-native-community/datetimepicker": "^8.4.4",
+    "@react-native-community/datetimepicker": "8.4.4",
     "@reduxjs/toolkit": "^2.11.2",
     "@tanstack/react-query": "^5.90.19",
     "axios": "^1.13.2",
+    "date-fns": "^4.1.0",
     "expo": "~54.0.32",
+    "expo-blur": "^15.0.8",
     "expo-clipboard": "^8.0.8",
     "expo-constants": "~18.0.13",
     "expo-dev-client": "~6.0.20",
@@ -25,6 +28,7 @@
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
+    "react-native-svg": "^15.15.1",
     "react-native-worklets": "0.5.1",
     "react-redux": "^9.2.0",
     "redux-persist": "^6.0.0",
@@ -38,10 +42,7 @@
   "expo": {
     "doctor": {
       "reactNativeDirectoryCheck": {
-        "exclude": [
-          "@maniac-tech/react-native-expo-read-sms",
-          "react-native-get-sms-android"
-        ]
+        "exclude": []
       }
     }
   },
@@ -50,10 +51,11 @@
   "private": true,
   "scripts": {
     "android": "expo run:android",
+    "eas-build-pre-install": "npm config set legacy-peer-deps true",
     "ios": "expo run:ios",
+    "postinstall": "patch-package",
     "start": "expo start",
-    "web": "expo start --web",
-    "postinstall": "patch-package"
+    "web": "expo start --web"
   },
   "version": "1.0.0"
 }

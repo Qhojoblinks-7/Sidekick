@@ -1,4 +1,4 @@
- import React, { useMemo, useContext, useState } from "react";
+import React, { useMemo, useContext, useState } from "react";
 import {
   View,
   Text,
@@ -9,13 +9,24 @@ import {
   Modal,
   TextInput,
   Alert,
+  Animated,
 } from "react-native";
 import { TransactionItem } from "../../components/TransactionItem";
+import { FilterHub } from "../../components/FilterHub";
+import { EditTransactionModal } from "../../components/EditTransactionModal";
 import { ThemeContext } from "../../contexts/ThemeContext";
 import { useSelector, useDispatch } from "react-redux";
-import { useUpdateTransaction, useUpdateExpense } from "../../hooks/useTransactions";
-import { removeTransaction, removeExpense, updateTransaction, updateExpense } from '../../store/store';
-import { apiCall } from '../../services/apiService';
+import {
+  useUpdateTransaction,
+  useUpdateExpense,
+} from "../../hooks/useTransactions";
+import {
+  removeTransaction,
+  removeExpense,
+  updateTransaction,
+  updateExpense,
+} from "../../store/store";
+import { apiCall } from "../../services/apiService";
 
 export default function History() {
   const { colors } = useContext(ThemeContext);
@@ -23,32 +34,32 @@ export default function History() {
     useSelector((state) => state.data);
   const { mutate: updateTransaction, isPending: isUpdating } =
     useUpdateTransaction();
-
-  const { mutate: updateExpense, isPending: isUpdatingExpense } = useUpdateExpense();
-
+  const { mutate: updateExpense, isPending: isUpdatingExpense } =
+    useUpdateExpense();
   const dispatch = useDispatch();
+
+  // Filter state
   const [selectedFilter, setSelectedFilter] = useState("All");
+
+  // Edit modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [deliveryFee, setDeliveryFee] = useState("");
 
+  // Delete modal state
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-
   const [itemToDelete, setItemToDelete] = useState(null);
-
   const [successModalVisible, setSuccessModalVisible] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Expense edit modal
   const [editExpenseModalVisible, setEditExpenseModalVisible] = useState(false);
-  
   const [selectedExpense, setSelectedExpense] = useState(null);
-  
   const [expenseAmount, setExpenseAmount] = useState("");
-  
   const [expenseCategory, setExpenseCategory] = useState("Fuel");
-  
   const [expenseDescription, setExpenseDescription] = useState("");
 
+  // Select mode state
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
 
@@ -80,6 +91,15 @@ export default function History() {
         type: type,
         status: tx.status,
         created_at: createdAt,
+        rider_profit: parseFloat(tx.rider_profit),
+        platform_debt: parseFloat(tx.platform_debt || 0),
+        isTip: tx.is_tip || false,
+        syncStatus:
+          tx.status === "synced"
+            ? "synced"
+            : tx.status === "local"
+              ? "local"
+              : "edited",
       };
     });
 
@@ -100,6 +120,7 @@ export default function History() {
         type: "expense",
         status: exp.status,
         created_at: createdAt,
+        syncStatus: "local",
       };
     });
 
@@ -121,6 +142,14 @@ export default function History() {
     return allTransactions;
   }, [allTransactions, selectedFilter]);
 
+  // Today's transaction count for the subtitle
+  const todayCount = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return allTransactions.filter((tx) => new Date(tx.created_at) >= today)
+      .length;
+  }, [allTransactions]);
+
   const handleDelete = (item) => {
     setItemToDelete(item);
     setDeleteModalVisible(true);
@@ -129,20 +158,20 @@ export default function History() {
   const confirmDelete = async () => {
     try {
       const item = itemToDelete;
-      const isExpense = item.id.startsWith('exp-');
-      const endpoint = isExpense ? '/api/expenses/' : '/api/transactions/';
-      const id = item.id.replace(isExpense ? 'exp-' : 'tx-', '');
-      await apiCall(`${endpoint}${id}/`, { method: 'DELETE' });
+      const isExpense = item.id.startsWith("exp-");
+      const endpoint = isExpense ? "/api/expenses/" : "/api/transactions/";
+      const id = item.id.replace(isExpense ? "exp-" : "tx-", "");
+      await apiCall(`${endpoint}${id}/`, { method: "DELETE" });
       if (isExpense) {
         dispatch(removeExpense(parseInt(id)));
       } else {
         dispatch(removeTransaction(parseInt(id)));
       }
-      setSuccessMessage('Transaction deleted successfully');
+      setSuccessMessage("Transaction deleted successfully");
       setSuccessModalVisible(true);
     } catch (error) {
-      console.error('Delete error:', error);
-      Alert.alert('Error', 'Failed to delete transaction');
+      console.error("Delete error:", error);
+      Alert.alert("Error", "Failed to delete transaction");
     } finally {
       setDeleteModalVisible(false);
       setItemToDelete(null);
@@ -153,23 +182,23 @@ export default function History() {
     if (selectedItems.length === 0) return;
     try {
       for (const id of selectedItems) {
-        const isExpense = id.startsWith('exp-');
-        const endpoint = isExpense ? '/api/expenses/' : '/api/transactions/';
-        const realId = id.replace(isExpense ? 'exp-' : 'tx-', '');
-        await apiCall(`${endpoint}${realId}/`, { method: 'DELETE' });
+        const isExpense = id.startsWith("exp-");
+        const endpoint = isExpense ? "/api/expenses/" : "/api/transactions/";
+        const realId = id.replace(isExpense ? "exp-" : "tx-", "");
+        await apiCall(`${endpoint}${realId}/`, { method: "DELETE" });
         if (isExpense) {
           dispatch(removeExpense(parseInt(realId)));
         } else {
           dispatch(removeTransaction(parseInt(realId)));
         }
       }
-      setSuccessMessage('Selected items deleted successfully');
+      setSuccessMessage("Selected items deleted successfully");
       setSuccessModalVisible(true);
       setSelectedItems([]);
       setIsSelectMode(false);
     } catch (error) {
-      console.error('Bulk delete error:', error);
-      Alert.alert('Error', 'Failed to delete some items');
+      console.error("Bulk delete error:", error);
+      Alert.alert("Error", "Failed to delete some items");
     }
   };
 
@@ -198,58 +227,66 @@ export default function History() {
     );
   };
 
+  const handleMarkAsTip = () => {
+    if (!selectedTransaction) return;
+    updateTransaction(
+      {
+        id: selectedTransaction.id.replace("tx-", ""),
+        updatedTx: {
+          rider_profit: parseFloat(selectedTransaction.amount),
+          platform_debt: 0,
+          is_tip: true,
+        },
+      },
+      {
+        onSuccess: (result) => {
+          dispatch(updateTransaction(result));
+          setEditModalVisible(false);
+          Alert.alert("✨ Tip Confirmed!", "Full amount is now your profit!");
+        },
+      },
+    );
+  };
+
+  const handleFeeUpdate = (fee) => {
+    if (!selectedTransaction) return;
+    updateTransaction(
+      {
+        id: selectedTransaction.id.replace("tx-", ""),
+        updatedTx: {
+          rider_profit: parseFloat(selectedTransaction.amount) - fee,
+          platform_debt: fee,
+          is_tip: false,
+        },
+      },
+      {
+        onSuccess: (result) => {
+          dispatch(updateTransaction(result));
+          setEditModalVisible(false);
+          setDeliveryFee("");
+          Alert.alert("Success", "Delivery fee updated!");
+        },
+      },
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedItems(transactions.map((tx) => tx.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedItems([]);
+  };
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
-    },
-    header: {
-      paddingHorizontal: 16,
-      paddingTop: 24,
-      paddingBottom: 16,
-      marginBottom: 32,
-    },
-    headerContent: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    headerText: {
-      flex: 1,
-    },
-    selectButton: {
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-    },
-    selectButtonText: {
-      color: colors.textSecondary,
-      fontWeight: 'bold',
+      marginTop: 70,
     },
     scroll: {
       paddingHorizontal: 16,
-      paddingBottom: 20,
-    },
-    title: {
-      color: colors.textMuted,
-      fontSize: 12,
-      fontWeight: "bold",
-      textTransform: "uppercase",
-      letterSpacing: 2,
-    },
-    subtitle: {
-      color: colors.textSecondary,
-      fontSize: 14,
-      marginTop: 4,
-      marginBottom: 16,
-    },
-    mainTitle: {
-      color: colors.textMain,
-      fontSize: 30,
-      fontWeight: "900",
+      paddingBottom: 100, // Space for floating action bar
     },
     empty: {
       marginTop: 80,
@@ -268,61 +305,60 @@ export default function History() {
       marginBottom: 16,
       flexDirection: "row",
       justifyContent: "space-between",
+      alignItems: "center",
     },
     summaryLabel: {
       color: colors.textSecondary,
       fontWeight: "bold",
+      fontSize: 12,
+      textTransform: "uppercase",
     },
     summaryValue: {
       color: colors.profit,
       fontWeight: "900",
+      fontSize: 16,
     },
-    filterContainer: {
-      flexDirection: "row",
-      justifyContent: "space-around",
-      paddingHorizontal: 16,
-      marginBottom: 16,
-    },
-    filterButton: {
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 20,
+    // Floating Action Bar
+    floatingActionBar: {
+      position: "absolute",
+      bottom: 20,
+      left: 16,
+      right: 16,
+      backgroundColor: colors.card,
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: colors.border,
-      backgroundColor: colors.card,
+      padding: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      elevation: 8,
     },
-    filterButtonActive: {
-      backgroundColor: colors.profit,
-      borderColor: colors.profit,
-    },
-    filterButtonText: {
-      color: colors.textSecondary,
-      fontWeight: "bold",
-    },
-    filterButtonTextActive: {
-      color: colors.textMain,
-    },
-    bulkActions: {
-      paddingHorizontal: 16,
-      marginBottom: 16,
-    },
-    deleteButton: {
+    bulkDeleteButton: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       paddingVertical: 12,
-      paddingHorizontal: 20,
       borderRadius: 12,
       backgroundColor: colors.expense,
-      alignItems: 'center',
+      gap: 8,
     },
-    deleteButtonDisabled: {
-      backgroundColor: colors.border,
-    },
-    deleteButtonText: {
+    bulkDeleteText: {
       color: colors.textMain,
-      fontWeight: 'bold',
+      fontWeight: "800",
+      fontSize: 14,
     },
-    deleteButtonTextDisabled: {
+    selectedCount: {
+      fontSize: 12,
       color: colors.textMuted,
+      fontWeight: "600",
     },
+    // Modal styles
     modalOverlay: {
       flex: 1,
       backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -353,16 +389,15 @@ export default function History() {
       textTransform: "uppercase",
       marginBottom: 8,
     },
-    input: {
+    modalInput: {
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: 12,
       padding: 16,
-      fontSize: 24,
+      fontSize: 16,
       color: colors.textMain,
       backgroundColor: colors.card,
-      marginBottom: 20,
-      textAlign: "center",
+      marginBottom: 16,
     },
     modalButtons: {
       flexDirection: "row",
@@ -396,67 +431,21 @@ export default function History() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Page Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerText}>
-            <Text style={styles.title}>Transactions Feed</Text>
-            <Text style={styles.subtitle}>
-              Your personal bank statement. Every MoMo message processed shows up
-              here.
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.selectButton}
-            onPress={() => {
-              setIsSelectMode(!isSelectMode);
-              setSelectedItems([]);
-            }}
-          >
-            <Text style={styles.selectButtonText}>
-              {isSelectMode ? 'Cancel' : 'Select'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Filter Buttons */}
-      <View style={styles.filterContainer}>
-        {["All", "Yango", "Bolt", "Private"].map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={[
-              styles.filterButton,
-              selectedFilter === filter && styles.filterButtonActive,
-            ]}
-            onPress={() => setSelectedFilter(filter)}
-          >
-            <Text
-              style={[
-                styles.filterButtonText,
-                selectedFilter === filter && styles.filterButtonTextActive,
-              ]}
-            >
-              {filter}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Bulk Actions */}
-      {isSelectMode && (
-        <View style={styles.bulkActions}>
-          <TouchableOpacity
-            style={[styles.deleteButton, selectedItems.length === 0 && styles.deleteButtonDisabled]}
-            onPress={handleBulkDelete}
-            disabled={selectedItems.length === 0}
-          >
-            <Text style={[styles.deleteButtonText, selectedItems.length === 0 && styles.deleteButtonTextDisabled]}>
-              Delete Selected ({selectedItems.length})
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Filter Hub */}
+      <FilterHub
+        selectedFilter={selectedFilter}
+        onFilterChange={setSelectedFilter}
+        transactionCount={todayCount}
+        isSelectMode={isSelectMode}
+        onSelectModeChange={(mode) => {
+          setIsSelectMode(mode);
+          if (!mode) setSelectedItems([]);
+        }}
+        selectedItemsCount={selectedItems.length}
+        totalItems={transactions.length}
+        onSelectAll={handleSelectAll}
+        onDeselectAll={handleDeselectAll}
+      />
 
       {/* The Feed */}
       <FlatList
@@ -476,6 +465,10 @@ export default function History() {
             time={item.time}
             type={item.type}
             status={item.status}
+            isTip={item.isTip}
+            riderProfit={item.rider_profit}
+            platformDebt={item.platform_debt}
+            syncStatus={item.syncStatus}
             onPress={() => {
               if (item.type === "expense") {
                 setSelectedExpense(item);
@@ -489,12 +482,17 @@ export default function History() {
                 setEditModalVisible(true);
               }
             }}
-            onLongPress={() => handleDelete(item)}
+            onLongPress={() => {
+              if (!isSelectMode) {
+                setIsSelectMode(true);
+                setSelectedItems([item.id]);
+              }
+            }}
             isSelectMode={isSelectMode}
             isSelected={selectedItems.includes(item.id)}
             onSelect={() => {
               if (selectedItems.includes(item.id)) {
-                setSelectedItems(selectedItems.filter(id => id !== item.id));
+                setSelectedItems(selectedItems.filter((id) => id !== item.id));
               } else {
                 setSelectedItems([...selectedItems, item.id]);
               }
@@ -509,109 +507,33 @@ export default function History() {
         }
       />
 
-      {/* Edit Transaction Modal */}
-      <Modal
-        visible={editModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setEditModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Transaction</Text>
-
-            <Text style={styles.inputLabel}>
-              Received Amount: GH₵{selectedTransaction?.amount}
+      {/* Floating Action Bar for Bulk Actions */}
+      {isSelectMode && selectedItems.length > 0 && (
+        <View style={styles.floatingActionBar}>
+          <Text style={styles.selectedCount}>
+            {selectedItems.length} selected
+          </Text>
+          <TouchableOpacity
+            style={styles.bulkDeleteButton}
+            onPress={handleBulkDelete}
+          >
+            <Ionicons name="trash" size={18} color={colors.textMain} />
+            <Text style={styles.bulkDeleteText}>
+              Delete Selected ({selectedItems.length})
             </Text>
-
-            <TouchableOpacity
-              style={[styles.modalButton, styles.saveButton]}
-              onPress={() => {
-                updateTransaction(
-                  {
-                    id: selectedTransaction.id.replace("tx-", ""),
-                    updatedTx: {
-                      rider_profit: parseFloat(selectedTransaction.amount),
-                      platform_debt: 0,
-                    },
-                  },
-                  {
-                    onSuccess: (result) => {
-                      dispatch(updateTransaction(result));
-                      setEditModalVisible(false);
-                      Alert.alert("Success", "Transaction updated successfully");
-                    },
-                  },
-                );
-              }}
-              disabled={isUpdating}
-            >
-              <Text style={styles.saveButtonText}>
-                {isUpdating ? "Updating..." : "Mark as Tip"}
-              </Text>
-            </TouchableOpacity>
-
-            <Text style={styles.inputLabel}>Or Enter Delivery Fee (GHS)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="0.00"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="numeric"
-              value={deliveryFee}
-              onChangeText={setDeliveryFee}
-            />
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setEditModalVisible(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={() => {
-                  const fee = parseFloat(deliveryFee);
-                  if (
-                    isNaN(fee) ||
-                    fee < 0 ||
-                    fee > parseFloat(selectedTransaction.amount)
-                  ) {
-                    Alert.alert(
-                      "Invalid Fee",
-                      "Please enter a valid delivery fee.",
-                    );
-                    return;
-                  }
-                  updateTransaction(
-                    {
-                      id: selectedTransaction.id.replace("tx-", ""),
-                      updatedTx: {
-                        rider_profit:
-                          parseFloat(selectedTransaction.amount) - fee,
-                        platform_debt: fee,
-                      },
-                    },
-                    {
-                      onSuccess: (result) => {
-                        dispatch(updateTransaction(result));
-                        setEditModalVisible(false);
-                        setDeliveryFee("");
-                        Alert.alert("Success", "Delivery fee updated!");
-                      },
-                    },
-                  );
-                }}
-                disabled={isUpdating}
-              >
-                <Text style={styles.saveButtonText}>
-                  {isUpdating ? "Updating..." : "Update Fee"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          </TouchableOpacity>
         </View>
-      </Modal>
+      )}
+
+      {/* Edit Transaction Modal */}
+      <EditTransactionModal
+        visible={editModalVisible}
+        onClose={() => setEditModalVisible(false)}
+        transaction={selectedTransaction}
+        onSave={handleFeeUpdate}
+        onMarkAsTip={handleMarkAsTip}
+        isUpdating={isUpdating}
+      />
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -623,7 +545,10 @@ export default function History() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Delete Transaction</Text>
-            <Text style={styles.inputLabel}>Are you sure you want to delete this transaction? This action cannot be undone.</Text>
+            <Text style={styles.inputLabel}>
+              Are you sure you want to delete this transaction? This action
+              cannot be undone.
+            </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
@@ -641,7 +566,7 @@ export default function History() {
           </View>
         </View>
       </Modal>
-  
+
       {/* Edit Expense Modal */}
       <Modal
         visible={editExpenseModalVisible}
@@ -697,7 +622,12 @@ export default function History() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Success</Text>
-            <Text style={[styles.inputLabel, { textAlign: 'center', marginBottom: 20 }]}>
+            <Text
+              style={[
+                styles.inputLabel,
+                { textAlign: "center", marginBottom: 20 },
+              ]}
+            >
               {successMessage}
             </Text>
             <TouchableOpacity
@@ -711,4 +641,7 @@ export default function History() {
       </Modal>
     </SafeAreaView>
   );
-  }
+}
+
+// Import Ionicons for the delete icon
+import { Ionicons } from "@expo/vector-icons";

@@ -16,7 +16,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemeContext } from "../../contexts/ThemeContext";
 import { useToast } from "../../contexts/ToastContext";
 import { GoalProgressBar } from "../../components/GoalProgressBar";
@@ -24,11 +23,14 @@ import PageHeader from "../../components/PageHeader";
 import DashboardCards from "../../components/DashboardCards";
 import TransactionList from "../../components/TransactionList";
 import CustomDateModal from "../../components/CustomDateModal";
+import { HeroSection } from "../../components/HeroSection";
+import { PlatformHealth } from "../../components/PlatformHealth";
 import useDashboardData from "../../hooks/useDashboardData";
 import useFilteredTransactions from "../../hooks/useFilteredTransactions";
 import usePeriodSummary from "../../hooks/usePeriodSummary";
 import { startLiveTracking, syncMissedTrips, requestSMSPermissions } from "../../services/smsService";
 import io from "socket.io-client";
+import { SOCKET_BASE_URL } from "../../constants/API";
 
 export default function Dashboard() {
   const { colors } = useContext(ThemeContext);
@@ -66,6 +68,9 @@ export default function Dashboard() {
   const [manualSyncLoading, setManualSyncLoading] = useState(false);
   const hasSyncedOnStartup = useRef(false);
   const hasRequestedPermission = useRef(false);
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const ITEMS_PER_PAGE = 10;
   const resetTransactionStates = () => {
     setManualAmount("");
     setAmountReceived("");
@@ -76,6 +81,20 @@ export default function Dashboard() {
     setSystemFees("");
     setGrossTotal("");
     setFieldStep(0);
+  };
+
+  const updateSummary = async () => {
+    try {
+      const response = await apiCall('/api/summary/daily/');
+      if (response.ok) {
+        const summary = await response.json();
+        dispatch(setSummary(summary));
+      } else {
+        console.error('Failed to fetch summary:', response.status);
+      }
+    } catch (error) {
+      console.error('Error updating summary:', error);
+    }
   };
 
   const addTransaction = async (transactionData, options = {}) => {
@@ -175,7 +194,7 @@ export default function Dashboard() {
   useDashboardData();
 
   useEffect(() => {
-    const socket = io("http://localhost:3001");
+    const socket = io(SOCKET_BASE_URL);
     socket.on("new_transaction", () => {
       queryClient.invalidateQueries({ queryKey: ["dashboardStats"] });
       Vibration.vibrate();
@@ -197,10 +216,10 @@ export default function Dashboard() {
               {
                 tx_id: trip.transactionId,
                 amount_received: trip.amount,
-                rider_profit: trip.amount,
-                platform_debt: 0,
+                rider_profit: trip.rider_profit || trip.amount, // Use calculated value or fallback
+                platform_debt: trip.platform_debt || 0, // Use calculated value or fallback
                 platform: trip.source === 'Bolt Food' ? 'BOLT' : 'YANGO',
-                is_tip: false,
+                is_tip: trip.is_tip || false,
                 created_at: new Date().toISOString(),
               },
               {
@@ -230,10 +249,10 @@ export default function Dashboard() {
               {
                 tx_id: trip.transactionId,
                 amount_received: trip.amount,
-                rider_profit: trip.amount,
-                platform_debt: 0,
+                rider_profit: trip.rider_profit || trip.amount, // Use calculated value or fallback
+                platform_debt: trip.platform_debt || 0, // Use calculated value or fallback
                 platform: trip.source === 'Bolt Food' ? 'BOLT' : 'YANGO',
-                is_tip: false,
+                is_tip: trip.is_tip || false,
                 created_at: new Date().toISOString(),
               },
               {
@@ -256,8 +275,11 @@ export default function Dashboard() {
   }, [smsEnabled]);
   useEffect(() => {
     if (currentStep === 3) {
+      console.log('[DEBUG] currentStep === 3, setting transactionDateModalVisible to true');
+      console.log('[DEBUG] transactionDate:', transactionDate.toISOString());
       setTransactionDateModalVisible(true);
     } else {
+      console.log('[DEBUG] currentStep !== 3, setting transactionDateModalVisible to false');
       setTransactionDateModalVisible(false);
     }
   }, [currentStep]);
@@ -266,6 +288,20 @@ export default function Dashboard() {
     transactionsData,
     period,
   );
+
+  // Paginated transactions for infinite scroll
+  const paginatedTransactions = filteredTransactions.slice(0, page * ITEMS_PER_PAGE);
+
+  const handleLoadMore = () => {
+    if (!loadingMore && paginatedTransactions.length < filteredTransactions.length) {
+      setLoadingMore(true);
+      // Simulate network delay for smooth UX
+      setTimeout(() => {
+        setPage(prev => prev + 1);
+        setLoadingMore(false);
+      }, 500);
+    }
+  };
   const { data: periodSummary } = usePeriodSummary(period);
   const summaryData = periodSummary || {
     yango_income: 0,
@@ -276,6 +312,9 @@ export default function Dashboard() {
     net_profit: 0,
     total_debt: 0,
   };
+
+  // Calculate total income for the Hero section
+  const totalIncome = (summaryData.yango_income || 0) + (summaryData.bolt_income || 0);
 
   const styles = StyleSheet.create({
     container: {
@@ -301,14 +340,32 @@ export default function Dashboard() {
       shadowOffset: { width: 0, height: 5 },
       zIndex: 10,
     },
-    tripsTitle: {
+    activityHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginHorizontal: 16,
+      marginTop: 16,
+      marginBottom: 16,
+    },
+    activityTitle: {
       color: colors.textMain,
       fontSize: 18,
       fontWeight: "bold",
-      marginHorizontal: 16,
-      marginTop: 10,
-      marginBottom: 16,
-      textAlign: "center",
+    },
+    syncButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.border,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+    },
+    syncButtonText: {
+      color: colors.textMuted,
+      fontSize: 12,
+      fontWeight: '600',
+      marginLeft: 4,
     },
     transactionsScroll: {
       flex: 1,
@@ -424,7 +481,7 @@ export default function Dashboard() {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <PageHeader
         dropdownVisible={dropdownVisible}
         setDropdownVisible={setDropdownVisible}
@@ -433,21 +490,32 @@ export default function Dashboard() {
         onPeriodChange={setPeriod}
       />
 
-      <GoalProgressBar
-        current={summaryData.net_profit}
+      <HeroSection
+        netProfit={summaryData.net_profit}
+        income={totalIncome}
+        expenses={summaryData.expenses}
         target={dailyTarget}
       />
 
-      {smsEnabled && (
-        <View style={{ paddingHorizontal: 16, marginTop: 10 }}>
+      <PlatformHealth
+        boltDebt={summaryData.bolt_debt}
+        yangoDebt={summaryData.yango_debt}
+        boltLimit={200}
+        yangoLimit={200}
+      />
+
+      <TouchableOpacity
+        style={styles.quickAddButton}
+        onPress={() => setCurrentStep(1)}
+      >
+        <Ionicons name="add" size={40} color={colors.textMain} />
+      </TouchableOpacity>
+
+      <View style={styles.activityHeader}>
+        <Text style={styles.activityTitle}>Recent Activity</Text>
+        {smsEnabled && (
           <TouchableOpacity
-            style={{
-              backgroundColor: colors.profit,
-              paddingVertical: 12,
-              paddingHorizontal: 20,
-              borderRadius: 12,
-              alignItems: 'center',
-            }}
+            style={styles.syncButton}
             onPress={() => {
               dispatch(setSyncing(true));
               syncMissedTrips(null).then((trips) => {
@@ -457,10 +525,10 @@ export default function Dashboard() {
                       {
                         tx_id: trip.transactionId,
                         amount_received: trip.amount,
-                        rider_profit: trip.amount,
-                        platform_debt: 0,
+                        rider_profit: trip.rider_profit || trip.amount,
+                        platform_debt: trip.platform_debt || 0,
                         platform: trip.source === 'Bolt Food' ? 'BOLT' : 'YANGO',
-                        is_tip: false,
+                        is_tip: trip.is_tip || false,
                         created_at: new Date().toISOString(),
                       },
                       {
@@ -486,31 +554,25 @@ export default function Dashboard() {
             }}
             disabled={manualSyncLoading}
           >
-            <Text style={{ color: colors.textMain, fontWeight: 'bold' }}>
-              {manualSyncLoading ? 'Syncing...' : 'Sync Missed Payments'}
+            <Ionicons name="sync" size={16} color={colors.textMuted} />
+            <Text style={styles.syncButtonText}>
+              {manualSyncLoading ? 'Syncing...' : 'Sync SMS'}
             </Text>
           </TouchableOpacity>
-        </View>
-      )}
+        )}
+      </View>
 
-      <ScrollView style={styles.cardsScroll}>
-        <DashboardCards
-          periodSummary={summaryData}
-          dailyTarget={dailyTarget}
-        />
-      </ScrollView>
-
-      <TouchableOpacity
-        style={styles.quickAddButton}
-        onPress={() => setCurrentStep(1)}
+      <ScrollView 
+        style={styles.transactionsScroll}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
       >
-        <Ionicons name="add" size={40} color={colors.textMain} />
-      </TouchableOpacity>
-
-      <Text style={styles.tripsTitle}>Trip History</Text>
-
-      <ScrollView style={styles.transactionsScroll}>
-        <TransactionList filteredTransactions={filteredTransactions} />
+        <TransactionList filteredTransactions={paginatedTransactions} />
+        {loadingMore && (
+          <Text style={{ color: colors.textMuted, textAlign: 'center', padding: 10 }}>
+            Loading more...
+          </Text>
+        )}
       </ScrollView>
 
       <CustomDateModal
@@ -697,7 +759,7 @@ export default function Dashboard() {
         </View>
       </Modal>
 
-    </SafeAreaView>
+    </View>
   );
 }
 
