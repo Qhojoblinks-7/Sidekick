@@ -41,8 +41,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
             serializer.save(user=first_user)
 
 
-
-
 class ExpenseViewSet(viewsets.ModelViewSet):
     queryset = Expense.objects.all()
     serializer_class = ExpenseSerializer

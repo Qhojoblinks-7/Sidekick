@@ -1,4 +1,4 @@
-import React, { useMemo, useContext, useState } from "react";
+import React, { useMemo, useContext, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -26,7 +26,9 @@ import {
   updateTransaction,
   updateExpense,
 } from "../../store/store";
-import { apiCall } from "../../services/apiService";
+import { apiCall, SessionExpiredError } from "../../services/apiService";
+import { registerSessionExpiredHandler, triggerSessionExpired } from "../../hooks/usePeriodSummary";
+import * as SecureStore from "expo-secure-store";
 
 export default function History() {
   const { colors } = useContext(ThemeContext);
@@ -62,6 +64,15 @@ export default function History() {
   // Select mode state
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
+
+  // Register session expiration handler
+  useEffect(() => {
+    const unregister = registerSessionExpiredHandler(async () => {
+      dispatch(setTransactions([]));
+      dispatch(setExpenses([]));
+    });
+    return () => unregister();
+  }, [dispatch]);
 
   // Transform and combine data from Redux store
   const allTransactions = useMemo(() => {
@@ -171,6 +182,10 @@ export default function History() {
       setSuccessModalVisible(true);
     } catch (error) {
       console.error("Delete error:", error);
+      if (error instanceof SessionExpiredError) {
+        await triggerSessionExpired();
+        return;
+      }
       Alert.alert("Error", "Failed to delete transaction");
     } finally {
       setDeleteModalVisible(false);
@@ -198,6 +213,10 @@ export default function History() {
       setIsSelectMode(false);
     } catch (error) {
       console.error("Bulk delete error:", error);
+      if (error instanceof SessionExpiredError) {
+        await triggerSessionExpired();
+        return;
+      }
       Alert.alert("Error", "Failed to delete some items");
     }
   };

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useCallback } from "react";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAccessToken, logout as logoutUser } from "../services/apiService";
@@ -6,6 +6,13 @@ import { store } from '../store/store';
 import { loadSettings } from '../store/store';
 
 export const AuthContext = createContext();
+
+// Global session expiration callback
+let onSessionExpired = null;
+
+export const setSessionExpirationHandler = (callback) => {
+  onSessionExpired = callback;
+};
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -40,6 +47,16 @@ export const AuthProvider = ({ children }) => {
     bootstrapAsync();
   }, []);
 
+  const handleSessionExpired = useCallback(async () => {
+    console.log("Session expired, logging out...");
+    await logoutUser();
+    setIsAuthenticated(false);
+    setUser(null);
+    if (onSessionExpired) {
+      onSessionExpired();
+    }
+  }, []);
+
   const authContext = {
     isAuthenticated,
     isLoading,
@@ -51,6 +68,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setUser(null);
     },
+    onSessionExpired: handleSessionExpired,
   };
 
   return (

@@ -9,13 +9,23 @@ import {
   Alert,
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
+import { useDispatch, useSelector } from "react-redux";
 import { ThemeContext } from "../contexts/ThemeContext";
 import { isMoMoTransactionSMS } from "../services/smsService";
+import { parseMoMoSMS } from "../utils/momoTracker";
 import { apiCall } from "../services/apiService";
+import { addTransaction, addExpense } from "../store/store";
 
 const ManualSMSModal = ({ visible, onClose }) => {
   const { colors } = useContext(ThemeContext);
+  const dispatch = useDispatch();
+  const transactions = useSelector((state) => state.data.transactions);
   const [smsContent, setSmsContent] = useState("");
+
+  // Check if transaction already exists in Redux store
+  const isDuplicateTransaction = (txId) => {
+    return transactions.some((tx) => tx.tx_id === txId);
+  };
 
   const handlePasteFromClipboard = async () => {
     try {
@@ -40,23 +50,58 @@ const ManualSMSModal = ({ visible, onClose }) => {
     }
 
     try {
-      const parsed = parseSMS(smsContent);
+      const parsed = parseMoMoSMS(smsContent);
       if (!parsed) {
         Alert.alert("Invalid SMS", "Could not parse the SMS content.");
         return;
       }
-      const endpoint = parsed.type === 'transaction' ? '/api/transactions/' : '/api/expenses/';
-      const response = await apiCall(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(parsed.data),
-      });
-      if (response.ok) {
-        Alert.alert("Success", `${parsed.type === 'transaction' ? 'Transaction' : 'Expense'} processed successfully.`);
-        setSmsContent("");
-        onClose();
+      
+      // Check for duplicate transaction
+      if (!isPrivate && isDuplicateTransaction(parsed.tx_id)) {
+        Alert.alert("Duplicate", "This transaction has already been added.");
+        return;
+      }
+      
+      // Determine platform and calculate expense-like values
+      const isPrivate = parsed.platform === 'PRIVATE';
+      
+      if (isPrivate) {
+        // Treat as expense if private
+        const expenseData = {
+          amount: parsed.amount_received,
+          category: 'Private',
+          description: `Manual entry from SMS - Ref: ${parsed.tx_id}`,
+        };
+        const response = await apiCall('/api/expenses/', {
+          method: 'POST',
+          body: JSON.stringify(expenseData),
+        });
+        if (response.ok) {
+          const expense = await response.json();
+          dispatch(addExpense(expense));
+          Alert.alert("Success", "Expense added successfully.");
+          setSmsContent("");
+          onClose();
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          Alert.alert("Error", errorData.detail || "Failed to process expense.");
+        }
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        Alert.alert("Error", errorData.detail || "Failed to process.");
+        // Treat as transaction
+        const response = await apiCall('/api/transactions/', {
+          method: 'POST',
+          body: JSON.stringify(parsed),
+        });
+        if (response.ok) {
+          const transaction = await response.json();
+          dispatch(addTransaction(transaction));
+          Alert.alert("Success", "Transaction processed successfully.");
+          setSmsContent("");
+          onClose();
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          Alert.alert("Error", errorData.detail || "Failed to process transaction.");
+        }
       }
     } catch (error) {
       Alert.alert("Error", "Failed to process SMS. Please try again.");

@@ -41,6 +41,14 @@ export const logout = async () => {
   await SecureStore.deleteItemAsync("refreshToken");
 };
 
+// Session expired error class
+export class SessionExpiredError extends Error {
+  constructor() {
+    super("Session expired. Please login again.");
+    this.name = "SessionExpiredError";
+  }
+}
+
 // API call with automatic token attachment and refresh
 export const apiCall = async (endpoint, options = {}) => {
   console.log(`API Call: ${endpoint}`, { options });
@@ -76,9 +84,9 @@ export const apiCall = async (endpoint, options = {}) => {
         console.log("Token refreshed successfully");
       } else {
         // Refresh failed, need to logout
-        console.error("Token refresh failed");
+        console.error("Token refresh failed, clearing tokens");
         await logout();
-        throw new Error("Session expired. Please login again.");
+        throw new SessionExpiredError();
       }
     }
 

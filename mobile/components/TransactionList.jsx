@@ -50,6 +50,11 @@ const TransactionList = ({ filteredTransactions }) => {
                 amount={parseFloat(amount).toFixed(2)}
                 time={timeString}
                 type={type}
+                status={tx.status}
+                isTip={tx.is_tip || false}
+                riderProfit={tx.rider_profit || null}
+                platformDebt={tx.platform_debt || null}
+                syncStatus={tx.syncStatus || 'synced'}
               />
             );
           })

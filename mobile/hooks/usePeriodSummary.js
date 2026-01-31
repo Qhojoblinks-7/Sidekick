@@ -1,5 +1,28 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiCall } from '../services/apiService';
+import { apiCall, SessionExpiredError } from '../services/apiService';
+import { router } from 'expo-router';
+import * as SecureStore from "expo-secure-store";
+
+// Session expiration handler registry
+const sessionExpiredHandlers = new Set();
+
+// Register a session expiration handler
+export const registerSessionExpiredHandler = (handler) => {
+  sessionExpiredHandlers.add(handler);
+  return () => sessionExpiredHandlers.delete(handler);
+};
+
+// Trigger all session expiration handlers
+const triggerSessionExpired = async () => {
+  console.log("Session expired, clearing tokens and notifying handlers...");
+  // Clear tokens
+  await SecureStore.deleteItemAsync("accessToken");
+  await SecureStore.deleteItemAsync("refreshToken");
+  // Notify all handlers
+  sessionExpiredHandlers.forEach(handler => handler());
+  // Navigate to auth
+  router.replace('/auth');
+};
 
 const usePeriodSummary = (period) => {
   return useQuery({
@@ -15,6 +38,11 @@ const usePeriodSummary = (period) => {
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 1,
+    onError: async (error) => {
+      if (error instanceof SessionExpiredError) {
+        await triggerSessionExpired();
+      }
+    },
   });
 };
 

@@ -18,7 +18,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { apiCall } from '../../services/apiService';
 import { useSelector, useDispatch } from 'react-redux';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { addExpense } from '../../store/store';
+import { addExpense, selectDailyTarget } from '../../store/store';
 import { Ionicons } from '@expo/vector-icons';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -35,6 +35,7 @@ export default function Expenses() {
   const { colors } = useContext(ThemeContext);
   const { showToast } = useToast();
   const { expenses } = useSelector(state => state.data);
+  const dailyTarget = useSelector(selectDailyTarget);
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
 
@@ -47,8 +48,8 @@ export default function Expenses() {
     })
     .reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
 
-  // Calculate average daily earnings (mock for now - should come from actual data)
-  const averageDailyEarnings = 150; // GH₵
+  // Use daily target as reference for burn percentage (or 80% of target as reasonable daily earnings)
+  const averageDailyEarnings = dailyTarget * 0.8; // 80% of daily profit target
   const burnPercentage = Math.min((todayExpenses / averageDailyEarnings) * 100, 100);
   const isWarning = burnPercentage > 70;
 

@@ -154,18 +154,22 @@ export default function Dashboard() {
       const gt = parseFloat(grossTotal);
       riderProfit = tp + b - sf;
       amtReceived = gt;
-      platformDebt = amtReceived - riderProfit;
+      platformDebt = parseFloat((amtReceived - riderProfit).toFixed(2));
       isTip = riderProfit < amtReceived;
     } else {
       const fullFee = parseFloat(manualAmount);
       amtReceived = parseFloat(amountReceived);
-      if (fullFee <= amtReceived) {
+      // fullFee is what rider received, amtReceived is total trip value
+      if (amtReceived > fullFee) {
+        // Customer paid more than what rider received - platform took cut
         riderProfit = fullFee;
-        platformDebt = amtReceived - fullFee;
+        platformDebt = parseFloat((amtReceived - fullFee).toFixed(2));
+        isTip = false;
       } else {
+        // Rider received full trip value or more - tip scenario
         riderProfit = amtReceived;
         platformDebt = 0;
-        isTip = true;
+        isTip = fullFee > amtReceived;
       }
     }
     // Round to 2 decimal places to avoid precision issues

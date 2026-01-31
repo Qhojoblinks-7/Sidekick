@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
-import { apiCall } from '../services/apiService';
+import { apiCall, SessionExpiredError } from '../services/apiService';
 import { addTransaction, addExpense, removeTransaction, removeExpense, setSummary, selectSummary } from '../store/store';
+import { registerSessionExpiredHandler, triggerSessionExpired } from './usePeriodSummary';
+import * as SecureStore from "expo-secure-store";
 
 const updateSummary = async (dispatch) => {
   try {
@@ -14,7 +16,14 @@ const updateSummary = async (dispatch) => {
     }
   } catch (error) {
     console.error('Error updating summary:', error);
+    if (error instanceof SessionExpiredError) {
+      throw error;
+    }
   }
+};
+
+const handleSessionExpired = async (router) => {
+  await triggerSessionExpired();
 };
 
 export const useAddTransaction = () => {
@@ -46,11 +55,17 @@ export const useAddTransaction = () => {
       await updateSummary(dispatch);
       queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
     },
+    onError: async (error) => {
+      if (error instanceof SessionExpiredError) {
+        await triggerSessionExpired();
+      }
+    },
   });
 };
 
 export const useUpdateTransaction = () => {
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
   return useMutation({
     mutationFn: async ({ id, updatedTx }) => {
@@ -74,6 +89,11 @@ export const useUpdateTransaction = () => {
     onSuccess: async () => {
       await updateSummary(dispatch);
       queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
+    },
+    onError: async (error) => {
+      if (error instanceof SessionExpiredError) {
+        await triggerSessionExpired();
+      }
     },
   });
 };
@@ -116,6 +136,11 @@ export const useAddExpense = () => {
       }
       queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
     },
+    onError: async (error) => {
+      if (error instanceof SessionExpiredError) {
+        await triggerSessionExpired();
+      }
+    },
   });
 };
 
@@ -146,6 +171,11 @@ export const useUpdateExpense = () => {
       await updateSummary(dispatch);
       queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
     },
+    onError: async (error) => {
+      if (error instanceof SessionExpiredError) {
+        await triggerSessionExpired();
+      }
+    },
   });
 };
 
@@ -175,6 +205,11 @@ export const useDeleteExpense = () => {
       dispatch(removeExpense(id));
       await updateSummary(dispatch);
       queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
+    },
+    onError: async (error) => {
+      if (error instanceof SessionExpiredError) {
+        await triggerSessionExpired();
+      }
     },
   });
 };

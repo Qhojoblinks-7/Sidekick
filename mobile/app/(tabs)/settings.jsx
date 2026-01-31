@@ -28,6 +28,7 @@ import {
   setTransactions,
   setExpenses,
   updatePlatformDebt,
+  loadSettings,
   selectIsOnline,
   selectIsSyncing,
   selectLastSyncTime,
@@ -109,7 +110,21 @@ export default function Settings() {
 
   useEffect(() => {
     checkBackendConnection();
+    loadSettingsFromStorage();
   }, []);
+
+  const loadSettingsFromStorage = async () => {
+    try {
+      const settingsStr = await AsyncStorage.getItem('settings');
+      if (settingsStr) {
+        const settings = JSON.parse(settingsStr);
+        console.log('Loading settings from storage:', settings);
+        dispatch(loadSettings(settings));
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
 
   useEffect(() => {
     const saveSettingsToStorage = async () => {
