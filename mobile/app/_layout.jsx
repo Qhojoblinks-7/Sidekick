@@ -9,7 +9,7 @@ import { ThemeProvider } from '../contexts/ThemeContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ToastProvider } from '../contexts/ToastContext';
 import Toast from '../components/ui/Toast';
-import SMSChecker from '../components/SMSChecker';
+// import SMSChecker from '../components/SMSChecker';
 
 const queryClient = new QueryClient();
 
@@ -24,7 +24,7 @@ export default function RootLayout() {
                 <View style={{ flex: 1 }}>
                   <Slot />
                   <Toast />
-                  <SMSChecker />
+                  {/* <SMSChecker /> */}
                 </View>
               </ToastProvider>
             </AuthProvider>

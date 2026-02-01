@@ -39,8 +39,8 @@ import {
   selectTransactions,
 } from "../../store/store";
 import { useAuth } from "../../hooks/useAuth";
-import SMSConsentModal from "../../components/SMSConsentModal";
-import { requestSMSPermissions, startLiveTracking } from "../../services/smsService";
+// import SMSConsentModal from "../../components/SMSConsentModal";
+// import { requestSMSPermissions, startLiveTracking } from "../../services/smsService";
 
 export default function Settings() {
   console.log('Settings screen rendered');
@@ -134,7 +134,7 @@ export default function Settings() {
   useEffect(() => {
     const saveSettingsToStorage = async () => {
       try {
-        const settingsToSave = { dailyTarget, vehicleType, smsEnabled };
+        const settingsToSave = { dailyTarget, vehicleType /*, smsEnabled */ };
         console.log('Saving settings:', settingsToSave);
         await AsyncStorage.setItem('settings', JSON.stringify(settingsToSave));
         console.log('Settings saved successfully');
@@ -248,6 +248,7 @@ export default function Settings() {
     setVehicleModalVisible(false);
   };
 
+  /*
   const handleSmsToggle = () => {
     console.log('handleSmsToggle called, current smsEnabled:', smsEnabled);
     if (smsEnabled) {
@@ -276,6 +277,7 @@ export default function Settings() {
     setConsentModalVisible(false);
     showAlert("SMS Capture Disabled", "You can enable SMS capture later from settings.");
   };
+  */
 
 
   const handleSignOut = () => {
@@ -613,6 +615,7 @@ export default function Settings() {
           isSyncing={isSyncing}
         />
 
+        {/*
         <SettingOption
           icon="chatbubble-outline"
           label="SMS Capture"
@@ -620,6 +623,7 @@ export default function Settings() {
           onPress={handleSmsToggle}
           marginBottom={50}
         />
+        */}
 
         {/* Daily Target Modal */}
         <Modal
@@ -725,11 +729,11 @@ export default function Settings() {
         </Modal>
 
         {/* SMS Consent Modal */}
-        <SMSConsentModal
+        {/* <SMSConsentModal
           visible={consentModalVisible}
           onConsent={handleConsent}
           onDeny={handleDeny}
-        />
+        /> */}
       </ScrollView>
     </SafeAreaView>
   );

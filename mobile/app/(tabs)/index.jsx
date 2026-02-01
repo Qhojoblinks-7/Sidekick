@@ -28,7 +28,7 @@ import { PlatformHealth } from "../../components/PlatformHealth";
 import useDashboardData from "../../hooks/useDashboardData";
 import useFilteredTransactions from "../../hooks/useFilteredTransactions";
 import usePeriodSummary from "../../hooks/usePeriodSummary";
-import { startLiveTracking, syncMissedTrips, requestSMSPermissions } from "../../services/smsService";
+// import { startLiveTracking, syncMissedTrips, requestSMSPermissions } from "../../services/smsService";
 import io from "socket.io-client";
 import { SOCKET_BASE_URL } from "../../constants/API";
 
@@ -208,6 +208,8 @@ export default function Dashboard() {
   }, [queryClient]);
 
   useEffect(() => {
+    // SMS functionality disabled
+    /*
     let stopListening = () => {};
 
     if (smsEnabled && !hasSyncedOnStartup.current) {
@@ -276,6 +278,7 @@ export default function Dashboard() {
     }
 
     return () => stopListening();
+    */
   }, [smsEnabled]);
   useEffect(() => {
     if (currentStep === 3) {
@@ -519,53 +522,7 @@ export default function Dashboard() {
 
       <View style={styles.activityHeader}>
         <Text style={styles.activityTitle}>Recent Activity</Text>
-        {smsEnabled && (
-          <TouchableOpacity
-            style={styles.syncButton}
-            onPress={() => {
-              dispatch(setSyncing(true));
-              syncMissedTrips(null).then((trips) => {
-                if (trips.length > 0) {
-                  trips.forEach((trip) => {
-                    addTransaction(
-                      {
-                        tx_id: trip.transactionId,
-                        amount_received: trip.amount,
-                        rider_profit: trip.rider_profit || trip.amount,
-                        platform_debt: trip.platform_debt || 0,
-                        platform: trip.source === 'Bolt Food' ? 'BOLT' : 'YANGO',
-                        is_tip: trip.is_tip || false,
-                        created_at: new Date().toISOString(),
-                      },
-                      {
-                        onSuccess: () => {
-                          showToast(`Synced missed payment: GHS ${trip.amount} from ${trip.source}`, "success");
-                        },
-                      },
-                    );
-                  });
-                } else {
-                  showToast("No new missed payments found", "info");
-                }
-                dispatch(setSyncing(false));
-              }).catch((error) => {
-                console.error('Manual sync failed:', error);
-                dispatch(setSyncing(false));
-                if (error.message.includes('permission')) {
-                  showToast('SMS permission required. Please enable in settings.', 'error');
-                } else {
-                  showToast('Failed to sync payments. Please try again.', 'error');
-                }
-              });
-            }}
-            disabled={manualSyncLoading}
-          >
-            <Ionicons name="sync" size={16} color={colors.textMuted} />
-            <Text style={styles.syncButtonText}>
-              {manualSyncLoading ? 'Syncing...' : 'Sync SMS'}
-            </Text>
-          </TouchableOpacity>
-        )}
+        {/* SMS sync button - disabled */}
       </View>
 
       <ScrollView 

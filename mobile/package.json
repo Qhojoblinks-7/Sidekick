@@ -2,7 +2,6 @@
   "$schema": "https://json.schemastore.org/package.json",
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
-    "@maniac-tech/react-native-expo-read-sms": "*",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "@reduxjs/toolkit": "^2.11.2",
