@@ -33,16 +33,22 @@
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "2.0.21"
+            "kotlinVersion": "2.0.21",
+            "minSdkVersion": 34,
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36
           }
         }
       ]
     ],
     "doctor": {
       "reactNativeDirectoryCheck": {
-        "exclude": [
-          "@maniac-tech/react-native-expo-read-sms"
-        ]
+        "exclude": []
+      }
+    },
+    "android": {
+      "autolinkedLibraries": {
+        "exclude": []
       }
     },
     "splash": {
