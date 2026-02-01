@@ -152,12 +152,6 @@ android {
     }
 }
 
-// Ensure all configurations have both debug and release variants for autolinked libraries
-configurations {
-    debug { attributes { attribute(com.android.build.api.attributes.BuildTypeAttr, project.objects.named(com.android.build.api.attributes.BuildTypeAttr, 'debug')) } }
-    release { attributes { attribute(com.android.build.api.attributes.BuildTypeAttr, project.objects.named(com.android.build.api.attributes.BuildTypeAttr, 'release')) } }
-}
-
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
