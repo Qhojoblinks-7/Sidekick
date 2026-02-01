@@ -46,11 +46,6 @@
         "exclude": []
       }
     },
-    "android": {
-      "autolinkedLibraries": {
-        "exclude": []
-      }
-    },
     "splash": {
       "backgroundColor": "#000000",
       "resizeMode": "contain"
