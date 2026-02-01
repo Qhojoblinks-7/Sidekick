@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/package.json",
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@maniac-tech/react-native-expo-read-sms": "^9.0.2-alpha",
