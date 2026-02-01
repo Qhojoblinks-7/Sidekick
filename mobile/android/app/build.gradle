@@ -90,7 +90,7 @@ android {
     namespace 'com.sidekick.deliverytracker'
     defaultConfig {
         applicationId 'com.sidekick.deliverytracker'
-        minSdkVersion rootProject.ext.minSdkVersion
+        minSdkVersion 34
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"

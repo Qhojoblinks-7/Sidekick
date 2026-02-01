@@ -1,11 +1,30 @@
-import { PermissionsAndroid, DeviceEventEmitter } from "react-native";
+import { PermissionsAndroid, DeviceEventEmitter, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { startReadSMS } from "@maniac-tech/react-native-expo-read-sms";
+import { startReadSMS, stopReadSMS } from "@maniac-tech/react-native-expo-read-sms";
 import SmsAndroid from "react-native-get-sms-android";
 import { parseMoMoSMS } from "../utils/momoTracker";
 import { apiCall } from "./apiService";
 import { store } from "../store/store";
 import { addTransaction, setSummary } from "../store/store";
+
+// Flag to check if SMS library is available (requires development build)
+let isSMSLibraryAvailable = true;
+
+// Function to check if SMS library is properly initialized
+const isSMSReadingAvailable = () => {
+  if (Platform.OS !== 'android') {
+    console.log('[SMS] SMS reading only supported on Android');
+    return false;
+  }
+  
+  if (!startReadSMS || typeof startReadSMS !== 'function') {
+    console.warn('[SMS] startReadSMS function not available - requires development build');
+    isSMSLibraryAvailable = false;
+    return false;
+  }
+  
+  return true;
+};
 
 // Counter for debugging permission requests
 let permissionRequestCount = 0;
@@ -44,10 +63,16 @@ export const requestSMSPermissions = async () => {
   console.log("requestSMSPermissions called");
   try {
     // First, check current permission status to handle revocations
-    const currentStatus = await PermissionsAndroid.check(
+    const readSmsStatus = await PermissionsAndroid.check(
       PermissionsAndroid.PERMISSIONS.READ_SMS,
     );
-    console.log("Current SMS permission status:", currentStatus);
+    const receiveSmsStatus = await PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.RECEIVE_SMS,
+    );
+    const currentStatus = readSmsStatus && receiveSmsStatus;
+    console.log("Current READ_SMS permission status:", readSmsStatus);
+    console.log("Current RECEIVE_SMS permission status:", receiveSmsStatus);
+    console.log("Overall SMS permission status:", currentStatus);
 
     if (currentStatus) {
       // Permission is currently granted, cache it
@@ -95,19 +120,16 @@ export const requestSMSPermissions = async () => {
     `About to request SMS permission (attempt ${permissionRequestCount})`,
   );
   try {
-    const granted = await PermissionsAndroid.request(
+    const granted = await PermissionsAndroid.requestMultiple([
       PermissionsAndroid.PERMISSIONS.READ_SMS,
-      {
-        title: "SMS Permission",
-        message:
-          "This app needs access to your SMS to read transaction messages.",
-        buttonNeutral: "Ask Me Later",
-        buttonNegative: "Cancel",
-        buttonPositive: "OK",
-      },
-    );
+      PermissionsAndroid.PERMISSIONS.RECEIVE_SMS,
+    ]);
     console.log("Permission request result:", granted);
-    const isGranted = granted === PermissionsAndroid.RESULTS.GRANTED;
+    const readSmsGranted = granted[PermissionsAndroid.PERMISSIONS.READ_SMS] === PermissionsAndroid.RESULTS.GRANTED;
+    const receiveSmsGranted = granted[PermissionsAndroid.PERMISSIONS.RECEIVE_SMS] === PermissionsAndroid.RESULTS.GRANTED;
+    const isGranted = readSmsGranted && receiveSmsGranted;
+    console.log("Is READ_SMS granted:", readSmsGranted);
+    console.log("Is RECEIVE_SMS granted:", receiveSmsGranted);
     console.log("Is permission granted:", isGranted);
     // Cache the result
     try {
@@ -301,34 +323,95 @@ export const readAndProcessSMS = async (hasConsent = true) => {
 };
 
 // Live tracking listener
+let smsEventListener = null;
+
+// Function to start live SMS tracking
 export const startLiveTracking = (onNewTrip) => {
-  // Start listening for incoming SMS
-  startReadSMS(
-    async (address, body) => {
-      console.log("Received SMS from:", address, "Body:", body);
-      const parsed = parseMoMoSMS(body);
+  console.log("[SMS] startLiveTracking called");
+  
+  // Check if SMS reading is available
+  if (!isSMSReadingAvailable()) {
+    console.error("[SMS] SMS reading not available - cannot start tracking");
+    console.error("[SMS] This feature requires a development build (not Expo Go)");
+    console.error("[SMS] Run: npx expo run:android --configuration Debug");
+    return () => {};
+  }
+  
+  // Remove any existing listener
+  if (smsEventListener) {
+    smsEventListener.remove();
+    smsEventListener = null;
+  }
 
-      if (parsed) {
-        // Send to API and notify only if not a duplicate
-        try {
-          const result = await sendParsedSMSToAPI(parsed);
-          if (result !== null) {
-            onNewTrip(parsed);
-          }
-        } catch (error) {
-          console.error("Error processing live SMS:", error);
-        }
+  // Listen for incoming SMS via DeviceEventEmitter (correct API for this library)
+  smsEventListener = DeviceEventEmitter.addListener('received_sms', async (smsData) => {
+    console.log("Received SMS event:", smsData);
+    
+    // Parse the SMS data - the library returns array format [address, body]
+    let address = "";
+    let body = "";
+    
+    try {
+      // The library returns a string representation of an array
+      const parsed = JSON.parse(smsData);
+      if (Array.isArray(parsed) && parsed.length >= 2) {
+        address = parsed[0];
+        body = parsed[1];
+      } else if (typeof parsed === 'object' && parsed !== null) {
+        address = parsed[0] || "";
+        body = parsed[1] || "";
       }
-    },
-    (error) => {
-      console.error("SMS read error:", error);
-    },
-  );
+    } catch (e) {
+      console.error("Error parsing SMS data:", e);
+    }
+    
+    console.log("SMS from:", address, "Body:", body);
+    const parsed = parseMoMoSMS(body);
 
-  // Return a function to stop, but the library may not have a stop method
+    if (parsed) {
+      // Send to API and notify only if not a duplicate
+      try {
+        const result = await sendParsedSMSToAPI(parsed);
+        if (result !== null) {
+          onNewTrip(parsed);
+        }
+      } catch (error) {
+        console.error("Error processing live SMS:", error);
+      }
+    }
+  });
+
+  // Start the SMS receiver using the correct callback API
+  try {
+    startReadSMS(
+      (success) => {
+        console.log("SMS listener started successfully:", success);
+      },
+      (error) => {
+        console.error("Failed to start SMS listener:", error);
+        isSMSLibraryAvailable = false;
+      }
+    );
+  } catch (error) {
+    console.error("Error starting SMS listener:", error);
+    isSMSLibraryAvailable = false;
+  }
+
+  // Return a function to stop the listener
   return () => {
-    // If the library has a stop method, call it here
     console.log("Stopping SMS tracking");
+    if (smsEventListener) {
+      smsEventListener.remove();
+      smsEventListener = null;
+    }
+    // Also try to call stopReadSMS if available
+    try {
+      if (stopReadSMS && typeof stopReadSMS === 'function') {
+        stopReadSMS();
+      }
+    } catch (e) {
+      // Ignore if not available
+    }
   };
 };
 

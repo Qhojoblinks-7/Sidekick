@@ -39,6 +39,8 @@ import {
   selectTransactions,
 } from "../../store/store";
 import { useAuth } from "../../hooks/useAuth";
+import SMSConsentModal from "../../components/SMSConsentModal";
+import { requestSMSPermissions, startLiveTracking } from "../../services/smsService";
 
 export default function Settings() {
   console.log('Settings screen rendered');
@@ -80,6 +82,7 @@ export default function Settings() {
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
   const [tempTarget, setTempTarget] = useState("");
+  const [consentModalVisible, setConsentModalVisible] = useState(false);
 
   const vehicleTypes = ["Bicycle", "Motorcycle", "Car"];
 
@@ -247,13 +250,31 @@ export default function Settings() {
 
   const handleSmsToggle = () => {
     console.log('handleSmsToggle called, current smsEnabled:', smsEnabled);
-    const newValue = !smsEnabled;
-    dispatch(setSmsEnabled(newValue));
-    if (newValue) {
+    if (smsEnabled) {
+      // If already enabled, disable it directly
+      dispatch(setSmsEnabled(false));
+      showAlert("SMS Disabled", "SMS capture has been turned off.");
+    } else {
+      // Show consent modal before enabling
+      setConsentModalVisible(true);
+    }
+  };
+
+  const handleConsent = async () => {
+    setConsentModalVisible(false);
+    // Request permission first
+    const granted = await requestSMSPermissions();
+    if (granted) {
+      dispatch(setSmsEnabled(true));
       showAlert("SMS Enabled", "SMS capture is now active. Transaction messages will be automatically processed.");
     } else {
-      showAlert("SMS Disabled", "SMS capture has been turned off.");
+      showAlert("Permission Required", "SMS permission was denied. Please enable it in app settings to use SMS capture.");
     }
+  };
+
+  const handleDeny = () => {
+    setConsentModalVisible(false);
+    showAlert("SMS Capture Disabled", "You can enable SMS capture later from settings.");
   };
 
 
@@ -702,6 +723,13 @@ export default function Settings() {
             </View>
           </View>
         </Modal>
+
+        {/* SMS Consent Modal */}
+        <SMSConsentModal
+          visible={consentModalVisible}
+          onConsent={handleConsent}
+          onDeny={handleDeny}
+        />
       </ScrollView>
     </SafeAreaView>
   );

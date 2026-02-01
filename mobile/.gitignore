@@ -82,6 +82,10 @@ out/
 .cache/
 .expo/
 
+# Expo / Prebuild
+android/
+ios/
+
 # Python
 venv/
 ENV/

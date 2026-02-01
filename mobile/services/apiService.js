@@ -1,6 +1,14 @@
 import * as SecureStore from "expo-secure-store";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
+// API URL with proper fallback for development and production
+// IMPORTANT: Set EXPO_PUBLIC_API_URL in your environment variables
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Validate API URL is configured
+if (!process.env.EXPO_PUBLIC_API_URL) {
+  console.warn('WARNING: EXPO_PUBLIC_API_URL is not set! Using fallback: http://localhost:8000');
+  console.warn('Please set EXPO_PUBLIC_API_URL in your .env file or environment variables');
+}
 
 // Get stored tokens
 export const getAccessToken = async () => {

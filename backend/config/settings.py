@@ -24,12 +24,19 @@ load_dotenv()
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+
+# CRITICAL: Ensure SECRET_KEY is set in production
+if not SECRET_KEY:
+    raise ValueError(
+        "SECURITY WARNING: SECRET_KEY must be set in environment variables! "
+        "Do not use default keys in production!"
+    )
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.34.139.107', 'sidekick-backend-qyrs.onrender.com']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -126,8 +133,11 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# CORS settings
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:8081,http://127.0.0.1:8081,http://10.34.139.107:8000,https://sidekick-backend-qyrs.onrender.com').split(',')
+# CORS settings - Allow all in development, restrict in production
+CORS_ALLOWED_ORIGINS = os.environ.get(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:8081,http://127.0.0.1:8081'
+).split(',')
 
 # Django REST Framework settings
 REST_FRAMEWORK = {

@@ -5,7 +5,8 @@ import { useSelector } from "react-redux";
 import { selectSmsEnabled } from "../store/store";
 import { AuthContext } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
-import { readAndProcessSMS, syncMissedTrips } from "../services/smsService";
+import { readAndProcessSMS, syncMissedTrips, startLiveTracking } from "../services/smsService";
+import { addTransaction } from "../store/store";
 
 // Counter for debugging SMS checks
 let smsCheckCount = 0;
@@ -126,6 +127,26 @@ const SMSChecker = () => {
         "SMSChecker: Component unmounting, removing app state listener",
       );
       subscription?.remove();
+    };
+  }, [smsEnabled, isAuthenticated]);
+
+  // Start live SMS tracking when SMS is enabled and user is authenticated
+  useEffect(() => {
+    let stopTracking = null;
+    
+    if (smsEnabled && isAuthenticated) {
+      console.log("SMSChecker: Starting live SMS tracking");
+      stopTracking = startLiveTracking((parsedData) => {
+        console.log("SMSChecker: Live SMS received:", parsedData);
+        showToast(`New transaction: GHS ${parsedData.amount}`, "success");
+      });
+    }
+
+    return () => {
+      if (stopTracking) {
+        console.log("SMSChecker: Stopping live SMS tracking");
+        stopTracking();
+      }
     };
   }, [smsEnabled, isAuthenticated]);
 

@@ -29,6 +29,9 @@
         <data android:scheme="sidekick"/>
         <data android:scheme="exp+sidekick"/>
       </intent-filter>
+      <intent-filter data-generated="true">
+        <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+      </intent-filter>
     </activity>
   </application>
 </manifest>

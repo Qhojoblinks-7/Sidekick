@@ -28,8 +28,23 @@
       "expo-secure-store",
       "expo-font",
       "expo-dev-client",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.0.21"
+          }
+        }
+      ]
     ],
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "@maniac-tech/react-native-expo-read-sms"
+        ]
+      }
+    },
     "splash": {
       "backgroundColor": "#000000",
       "resizeMode": "contain"

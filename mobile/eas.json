@@ -1,15 +1,16 @@
 {
-  "cli": {
-    "version": ">= 16.28.0",
-    "appVersionSource": "remote"
-  },
   "build": {
     "development": {
-      "developmentClient": true,
-      "distribution": "internal",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sidekick-backend-qyrs.onrender.com",
+        "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64"
+      },
+      "prebuildCommand": "prebuild"
     },
     "preview": {
       "android": {
@@ -17,24 +18,29 @@
       },
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://sidekick-backend-qyrs.onrender.com"
-      }
+        "EXPO_PUBLIC_API_URL": "https://sidekick-backend-qyrs.onrender.com",
+        "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64"
+      },
+      "prebuildCommand": "prebuild"
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
       },
-      "distribution": "store",
       "autoIncrement": true,
+      "distribution": "store",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://sidekick-backend-qyrs.onrender.com"
-      }
+        "EXPO_PUBLIC_API_URL": "https://sidekick-backend-qyrs.onrender.com",
+        "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64"
+      },
+      "prebuildCommand": "prebuild"
     }
+  },
+  "cli": {
+    "appVersionSource": "remote",
+    "version": ">= 16.28.0"
   },
   "submit": {
     "production": {}
   }
 }
-
-
-
