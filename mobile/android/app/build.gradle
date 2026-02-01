@@ -121,6 +121,16 @@ android {
             crunchPngs enablePngCrunchInRelease.toBoolean()
         }
     }
+    // Ensure autolinked libraries have matching variants
+    variantFilter { variant ->
+        def names = variant.name.split(':')
+        def buildType = names[1]
+        // Create missing variants for autolinked libraries
+        if (buildType == 'release') {
+            variant.enableAndroidTest = false
+            variant.enableUnitTest = false
+        }
+    }
     packagingOptions {
         jniLibs {
             def enableLegacyPackaging = findProperty('expo.useLegacyPackaging') ?: 'false'
@@ -148,6 +158,24 @@ android {
         // Ex: android.packagingOptions.pickFirsts += '**/SCCS/**'
         options.each {
             android.packagingOptions[prop] += it
+        }
+    }
+}
+
+// Ensure all configurations have both debug and release variants for autolinked libraries
+configurations {
+    debug {
+        attributes {
+            attribute(com.android.build.api.attributes.BuildTypeAttr.DEBUG, objects.named(com.android.build.api.attributes.BuildTypeAttr, 'debug'))
+            attribute(com.android.build.api.attributes.AgpVersionAttr.AGP_VERSION, objects.named(com.android.build.api.attributes.AgpVersionAttr, '8.11.0'))
+            attribute(org.jetbrains.kotlin.platform.type.KOTLIN_PLATFORM_TYPE_ATTRIBUTE, objects.named(org.jetbrains.kotlin.platform.type.KotlinPlatformType.JVM))
+        }
+    }
+    release {
+        attributes {
+            attribute(com.android.build.api.attributes.BuildTypeAttr.DEBUG, objects.named(com.android.build.api.attributes.BuildTypeAttr, 'release'))
+            attribute(com.android.build.api.attributes.AgpVersionAttr.AGP_VERSION, objects.named(com.android.build.api.attributes.AgpVersionAttr, '8.11.0'))
+            attribute(org.jetbrains.kotlin.platform.type.KOTLIN_PLATFORM_TYPE_ATTRIBUTE, objects.named(org.jetbrains.kotlin.platform.type.KotlinPlatformType.JVM))
         }
     }
 }
