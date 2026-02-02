@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
 import { apiCall, SessionExpiredError } from '../services/apiService';
 import { addTransaction, addExpense, removeTransaction, removeExpense, setSummary, selectSummary } from '../store/store';
@@ -206,6 +206,45 @@ export const useDeleteExpense = () => {
       await updateSummary(dispatch);
       queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
     },
+    onError: async (error) => {
+      if (error instanceof SessionExpiredError) {
+        await triggerSessionExpired();
+      }
+    },
+  });
+};
+
+// Data fetching hooks for history screen
+const fetchHistoryData = async () => {
+  const [transactionsRes, expensesRes] = await Promise.all([
+    apiCall('/api/transactions/'),
+    apiCall('/api/expenses/')
+  ]);
+
+  const result = {};
+
+  if (transactionsRes.ok) {
+    result.transactions = await transactionsRes.json();
+  }
+  if (expensesRes.ok) {
+    result.expenses = await expensesRes.json();
+  }
+
+  return result;
+};
+
+export const useHistoryData = (options = {}) => {
+  const { staleTime = 2 * 60 * 1000, enabled = true } = options;
+
+  return useQuery({
+    queryKey: ['historyData'],
+    queryFn: fetchHistoryData,
+    staleTime,
+    cacheTime: 5 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    enabled,
     onError: async (error) => {
       if (error instanceof SessionExpiredError) {
         await triggerSessionExpired();

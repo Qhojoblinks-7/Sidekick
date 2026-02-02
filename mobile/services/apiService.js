@@ -10,13 +10,61 @@ if (!process.env.EXPO_PUBLIC_API_URL) {
   console.warn('Please set EXPO_PUBLIC_API_URL in your .env file or environment variables');
 }
 
-// Get stored tokens
+// Session expiration callback - set by the app
+let onSessionExpired = null;
+
+export const setSessionExpirationCallback = (callback) => {
+  onSessionExpired = callback;
+};
+
+// In-memory token cache to avoid repeated SecureStore reads
+let cachedAccessToken = null;
+let cachedRefreshToken = null;
+
+// Initialize token cache on app load
+const initializeTokenCache = async () => {
+  if (cachedAccessToken === null) {
+    cachedAccessToken = await SecureStore.getItemAsync("accessToken");
+  }
+  if (cachedRefreshToken === null) {
+    cachedRefreshToken = await SecureStore.getItemAsync("refreshToken");
+  }
+  return { accessToken: cachedAccessToken, refreshToken: cachedRefreshToken };
+};
+
+// Get cached or fresh access token
+const getAccessTokenInternal = async (forceRefresh = false) => {
+  if (!forceRefresh && cachedAccessToken !== null) {
+    return cachedAccessToken;
+  }
+  cachedAccessToken = await SecureStore.getItemAsync("accessToken");
+  return cachedAccessToken;
+};
+
+// Get cached or fresh refresh token
+const getRefreshTokenInternal = async () => {
+  if (cachedRefreshToken !== null) {
+    return cachedRefreshToken;
+  }
+  cachedRefreshToken = await SecureStore.getItemAsync("refreshToken");
+  return cachedRefreshToken;
+};
+
+// Clear token cache (call on logout)
+export const clearTokenCache = () => {
+  cachedAccessToken = null;
+  cachedRefreshToken = null;
+};
+
+// Get stored tokens (with caching)
 export const getAccessToken = async () => {
-  return await SecureStore.getItemAsync("accessToken");
+  await initializeTokenCache();
+  return cachedAccessToken;
 };
 
 export const getRefreshToken = async () => {
-  return await SecureStore.getItemAsync("refreshToken");
+  await initializeTokenCache();
+  return cachedRefreshToken;
 };
 
 // Refresh access token
@@ -34,6 +82,7 @@ export const refreshAccessToken = async () => {
     if (response.ok) {
       const data = await response.json();
       await SecureStore.setItemAsync("accessToken", data.access);
+      cachedAccessToken = data.access; // Update cache
       return data.access;
     }
     return null;
@@ -47,6 +96,8 @@ export const refreshAccessToken = async () => {
 export const logout = async () => {
   await SecureStore.deleteItemAsync("accessToken");
   await SecureStore.deleteItemAsync("refreshToken");
+  cachedAccessToken = null;
+  cachedRefreshToken = null;
 };
 
 // Session expired error class
@@ -62,7 +113,7 @@ export const apiCall = async (endpoint, options = {}) => {
   console.log(`API Call: ${endpoint}`, { options });
   console.log(`Full URL: ${API_URL}${endpoint}`);
 
-  let accessToken = await getAccessToken();
+  let accessToken = await getAccessTokenInternal();
 
   const headers = {
     "Content-Type": "application/json",
@@ -91,11 +142,24 @@ export const apiCall = async (endpoint, options = {}) => {
         });
         console.log("Token refreshed successfully");
       } else {
-        // Refresh failed, need to logout
+        // Refresh failed, need to logout and notify app
         console.error("Token refresh failed, clearing tokens");
         await logout();
+        // Notify the app to redirect to login
+        if (onSessionExpired) {
+          onSessionExpired();
+        }
         throw new SessionExpiredError();
       }
+    }
+
+    // Handle 401 without access token (no authentication)
+    if (response.status === 401 && !accessToken) {
+      console.error("No access token, authentication required");
+      if (onSessionExpired) {
+        onSessionExpired();
+      }
+      throw new SessionExpiredError();
     }
 
     if (!response.ok) {

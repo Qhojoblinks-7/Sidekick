@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, BasePermission, AllowAny
 from django.db.models import Sum
+from django.db import models
 from django.contrib.auth.models import User
 from .models import Transaction, Expense
 from .serializers import TransactionSerializer, ExpenseSerializer
@@ -76,40 +77,39 @@ class DailySummaryView(APIView):
             })
         
         today = date.today()
+        user = request.user
 
         try:
-            # Calculate Total Profit from Trips (user's data only)
-            profit_query = Transaction.objects.filter(user=request.user, created_at__date=today).aggregate(
-                Sum("rider_profit")
+            # OPTIMIZED: Single query for all transaction aggregates with platform grouping
+            # This replaces 6 separate queries with 1 query using conditional aggregation
+            transaction_aggs = Transaction.objects.filter(
+                user=user, 
+                created_at__date=today
+            ).aggregate(
+                total_profit=Sum("rider_profit"),
+                total_debt=Sum("platform_debt"),
+                yango_profit=Sum("rider_profit", filter=models.Q(platform='YANGO')),
+                bolt_profit=Sum("rider_profit", filter=models.Q(platform='BOLT')),
+                yango_debt=Sum("platform_debt", filter=models.Q(platform='YANGO')),
+                bolt_debt=Sum("platform_debt", filter=models.Q(platform='BOLT')),
             )
-            total_profit = profit_query["rider_profit__sum"] or 0
-            logger.info(f"[CALC_DEBUG] DailySummary - Total profit query result: {profit_query}, total_profit: {total_profit}")
+            
+            total_profit = transaction_aggs["total_profit"] or 0
+            total_debt = transaction_aggs["total_debt"] or 0
+            yango_income = transaction_aggs["yango_profit"] or 0
+            bolt_income = transaction_aggs["bolt_profit"] or 0
+            yango_debt = transaction_aggs["yango_debt"] or 0
+            bolt_debt = transaction_aggs["bolt_debt"] or 0
 
-            # Calculate Total Expenses (user's data only)
-            expenses_query = Expense.objects.filter(user=request.user, created_at__date=today).aggregate(Sum("amount"))
-            total_expenses = expenses_query["amount__sum"] or 0
-            logger.info(f"[CALC_DEBUG] DailySummary - Total expenses query result: {expenses_query}, total_expenses: {total_expenses}")
-
-            # Calculate Total Debt owed to Bolt/Yango (user's data only)
-            debt_query = Transaction.objects.filter(user=request.user, created_at__date=today).aggregate(
-                Sum("platform_debt")
-            )
-            total_debt = debt_query["platform_debt__sum"] or 0
-            logger.info(f"[CALC_DEBUG] DailySummary - Total debt query result: {debt_query}, total_debt: {total_debt}")
-
-            # Calculate incomes per platform
-            yango_income_query = Transaction.objects.filter(user=request.user, platform='YANGO', created_at__date=today).aggregate(Sum("rider_profit"))
-            yango_income = yango_income_query["rider_profit__sum"] or 0
-            bolt_income_query = Transaction.objects.filter(user=request.user, platform='BOLT', created_at__date=today).aggregate(Sum("rider_profit"))
-            bolt_income = bolt_income_query["rider_profit__sum"] or 0
-
-            # Calculate debts per platform
-            yango_debt_query = Transaction.objects.filter(user=request.user, platform='YANGO', created_at__date=today).aggregate(Sum("platform_debt"))
-            yango_debt = yango_debt_query["platform_debt__sum"] or 0
-            bolt_debt_query = Transaction.objects.filter(user=request.user, platform='BOLT', created_at__date=today).aggregate(Sum("platform_debt"))
-            bolt_debt = bolt_debt_query["platform_debt__sum"] or 0
+            # Single query for expenses
+            expenses_aggs = Expense.objects.filter(
+                user=user, 
+                created_at__date=today
+            ).aggregate(total_expenses=Sum("amount"))
+            total_expenses = expenses_aggs["total_expenses"] or 0
 
             net_profit = float(total_profit - total_expenses)
+            
             logger.info(f"[CALC_DEBUG] DailySummary - Final calculations: net_profit={net_profit}, total_debt={float(total_debt)}, expenses={float(total_expenses)}")
             return Response({
                 "net_profit": net_profit,

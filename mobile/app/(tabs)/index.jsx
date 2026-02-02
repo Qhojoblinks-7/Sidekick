@@ -28,6 +28,7 @@ import { PlatformHealth } from "../../components/PlatformHealth";
 import useDashboardData from "../../hooks/useDashboardData";
 import useFilteredTransactions from "../../hooks/useFilteredTransactions";
 import usePeriodSummary from "../../hooks/usePeriodSummary";
+import { HeroSkeleton, CardSkeleton, TransactionSkeleton } from "../../components/LoadingSkeleton";
 // import { startLiveTracking, syncMissedTrips, requestSMSPermissions } from "../../services/smsService";
 import io from "socket.io-client";
 import { SOCKET_BASE_URL } from "../../constants/API";
@@ -106,10 +107,25 @@ export default function Dashboard() {
       if (response.ok) {
         const newTransaction = await response.json();
         dispatch(addTransactionAction(newTransaction));
+        
+        // DEBUG: Log the new transaction
+        console.log('[TX_DEBUG] New transaction saved:', newTransaction);
+        console.log('[TX_DEBUG] platform_debt:', newTransaction.platform_debt);
+        
+        // Invalidate React Query cache to refresh data
+        await queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
+        await queryClient.invalidateQueries({ queryKey: ['historyData'] });
+        await queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
+        
+        // Force refetch the period summary immediately
+        await queryClient.refetchQueries({ queryKey: ['periodSummary'] });
+        
+        console.log('[TX_DEBUG] Cache invalidated and refetched');
+        
         if (options.onSuccess) options.onSuccess();
       } else {
-        console.error('Failed to add transaction');
-        if (options.onError) options.onError();
+        console.error('Failed to add transaction:', response.status);
+        if (options.onError) options.onError(new Error(`Failed: ${response.status}`));
       }
     } catch (error) {
       console.error('Error adding transaction:', error);
@@ -147,11 +163,13 @@ export default function Dashboard() {
     const date = selectedPeriod.startDate;
     setTransactionDate(date);
     let riderProfit, platformDebt, isTip = false, amtReceived;
+    let tp = 0, b = 0, sf = 0, gt = 0;
+    
     if (manualPlatform === "YANGO") {
-      const tp = parseFloat(tripPrice);
-      const b = parseFloat(bonuses || 0);
-      const sf = parseFloat(systemFees || 0);
-      const gt = parseFloat(grossTotal);
+      tp = parseFloat(tripPrice);
+      b = parseFloat(bonuses || 0);
+      sf = parseFloat(systemFees || 0);
+      gt = parseFloat(grossTotal);
       riderProfit = tp + b - sf;
       amtReceived = gt;
       platformDebt = parseFloat((amtReceived - riderProfit).toFixed(2));
@@ -159,43 +177,54 @@ export default function Dashboard() {
     } else {
       const fullFee = parseFloat(manualAmount);
       amtReceived = parseFloat(amountReceived);
-      // fullFee is what rider received, amtReceived is total trip value
       if (amtReceived > fullFee) {
-        // Customer paid more than what rider received - platform took cut
         riderProfit = fullFee;
         platformDebt = parseFloat((amtReceived - fullFee).toFixed(2));
         isTip = false;
       } else {
-        // Rider received full trip value or more - tip scenario
         riderProfit = amtReceived;
         platformDebt = 0;
         isTip = fullFee > amtReceived;
       }
     }
-    // Round to 2 decimal places to avoid precision issues
     riderProfit = parseFloat(riderProfit.toFixed(2));
     platformDebt = parseFloat(platformDebt.toFixed(2));
-    addTransaction(
-      {
-        tx_id: `manual-${Date.now()}`,
-        amount_received: amtReceived,
-        rider_profit: riderProfit,
-        platform_debt: platformDebt,
-        platform: manualPlatform,
-        is_tip: isTip,
-        created_at: date.toISOString(),
+    
+    // Build transaction data with all fields
+    const transactionData = {
+      tx_id: `manual-${Date.now()}`,
+      amount_received: amtReceived,
+      rider_profit: riderProfit,
+      platform_debt: platformDebt,
+      platform: manualPlatform,
+      is_tip: isTip,
+      created_at: date.toISOString(),
+    };
+    
+    // Add Yango-specific fields
+    if (manualPlatform === "YANGO") {
+      transactionData.trip_price = tp;
+      transactionData.bonuses = b;
+      transactionData.system_fees = sf;
+      transactionData.gross_total = gt;
+    }
+    
+    console.log('[TX_DEBUG] Sending transaction:', transactionData);
+    
+    addTransaction(transactionData, {
+      onSuccess: () => {
+        setCurrentStep(0);
+        resetTransactionStates();
+        showToast("Manual transaction added successfully!", "success");
       },
-      {
-        onSuccess: () => {
-          setCurrentStep(0);
-          resetTransactionStates();
-          showToast("Manual transaction added successfully!", "success");
-        },
+      onError: (error) => {
+        showToast(`Failed to add transaction: ${error.message}`, "error");
       },
-    );
+    });
     setTransactionDateModalVisible(false);
   };
-  useDashboardData();
+  const { isLoading, refetch, isFetching } = useDashboardData();
+  const isDataLoading = isLoading;
 
   useEffect(() => {
     const socket = io(SOCKET_BASE_URL);
@@ -499,44 +528,61 @@ export default function Dashboard() {
         />
       </View>
 
-      <HeroSection
-        netProfit={summaryData.net_profit}
-        income={totalIncome}
-        expenses={summaryData.expenses}
-        target={dailyTarget}
-      />
+      {/* Show skeleton while loading */}
+      {isDataLoading ? (
+        <>
+          <HeroSkeleton />
+          <View style={{ marginHorizontal: 16, marginTop: 16 }}>
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </View>
+          <View style={styles.activityHeader}>
+            <Text style={styles.activityTitle}>Recent Activity</Text>
+          </View>
+          <TransactionSkeleton count={5} />
+        </>
+      ) : (
+        <>
+          <HeroSection
+            netProfit={summaryData.net_profit}
+            income={totalIncome}
+            expenses={summaryData.expenses}
+            target={dailyTarget}
+          />
 
-      <PlatformHealth
-        boltDebt={summaryData.bolt_debt}
-        yangoDebt={summaryData.yango_debt}
-        boltLimit={200}
-        yangoLimit={200}
-      />
+          <PlatformHealth
+            boltDebt={summaryData.bolt_debt}
+            yangoDebt={summaryData.yango_debt}
+            boltLimit={500}
+            yangoLimit={500}
+          />
 
-      <TouchableOpacity
-        style={styles.quickAddButton}
-        onPress={() => setCurrentStep(1)}
-      >
-        <Ionicons name="add" size={40} color={colors.textMain} />
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickAddButton}
+            onPress={() => setCurrentStep(1)}
+          >
+            <Ionicons name="add" size={40} color={colors.textMain} />
+          </TouchableOpacity>
 
-      <View style={styles.activityHeader}>
-        <Text style={styles.activityTitle}>Recent Activity</Text>
-        {/* SMS sync button - disabled */}
-      </View>
+          <View style={styles.activityHeader}>
+            <Text style={styles.activityTitle}>Recent Activity</Text>
+          </View>
 
-      <ScrollView 
-        style={styles.transactionsScroll}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
-      >
-        <TransactionList filteredTransactions={paginatedTransactions} />
-        {loadingMore && (
-          <Text style={{ color: colors.textMuted, textAlign: 'center', padding: 10 }}>
-            Loading more...
-          </Text>
-        )}
-      </ScrollView>
+          <ScrollView 
+            style={styles.transactionsScroll}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+          >
+            <TransactionList filteredTransactions={paginatedTransactions} />
+            {loadingMore && (
+              <Text style={{ color: colors.textMuted, textAlign: 'center', padding: 10 }}>
+                Loading more...
+              </Text>
+            )}
+          </ScrollView>
+        </>
+      )}
 
       <CustomDateModal
         customDateModalVisible={customDateModalVisible}

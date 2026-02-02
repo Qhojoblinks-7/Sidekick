@@ -29,16 +29,21 @@ import {
 import { apiCall, SessionExpiredError } from "../../services/apiService";
 import { registerSessionExpiredHandler, triggerSessionExpired } from "../../hooks/usePeriodSummary";
 import * as SecureStore from "expo-secure-store";
+import { useHistoryData } from "../../hooks/useTransactions";
+import { TransactionSkeleton } from "../../components/LoadingSkeleton";
 
 export default function History() {
   const { colors } = useContext(ThemeContext);
-  const { transactions: transactionsData, expenses: expensesData } =
-    useSelector((state) => state.data);
+  const { data: historyData, isLoading: isHistoryLoading, refetch: refetchHistory } = useHistoryData();
   const { mutate: updateTransaction, isPending: isUpdating } =
     useUpdateTransaction();
   const { mutate: updateExpense, isPending: isUpdatingExpense } =
     useUpdateExpense();
   const dispatch = useDispatch();
+
+  // Use data from React Query hook, fall back to Redux store
+  const transactionsData = historyData?.transactions || [];
+  const expensesData = historyData?.expenses || [];
 
   // Filter state
   const [selectedFilter, setSelectedFilter] = useState("All");
@@ -471,64 +476,70 @@ export default function History() {
       </View>
 
       {/* The Feed */}
-      <FlatList
-        data={transactions}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>No transactions detected yet.</Text>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <TransactionItem
-            platform={item.platform}
-            amount={item.amount}
-            time={item.time}
-            type={item.type}
-            status={item.status}
-            isTip={item.isTip}
-            riderProfit={item.rider_profit}
-            platformDebt={item.platform_debt}
-            syncStatus={item.syncStatus}
-            onPress={() => {
-              if (item.type === "expense") {
-                setSelectedExpense(item);
-                setExpenseAmount(item.amount);
-                setExpenseCategory(item.platform);
-                setExpenseDescription("");
-                setEditExpenseModalVisible(true);
-              } else {
-                setSelectedTransaction(item);
-                setDeliveryFee("");
-                setEditModalVisible(true);
-              }
-            }}
-            onLongPress={() => {
-              if (!isSelectMode) {
-                setIsSelectMode(true);
-                setSelectedItems([item.id]);
-              }
-            }}
-            isSelectMode={isSelectMode}
-            isSelected={selectedItems.includes(item.id)}
-            onSelect={() => {
-              if (selectedItems.includes(item.id)) {
-                setSelectedItems(selectedItems.filter((id) => id !== item.id));
-              } else {
-                setSelectedItems([...selectedItems, item.id]);
-              }
-            }}
-          />
-        )}
-        ListFooterComponent={
-          <View style={styles.summary}>
-            <Text style={styles.summaryLabel}>Today's Transactions</Text>
-            <Text style={styles.summaryValue}>{transactions.length} Total</Text>
-          </View>
-        }
-      />
+      {isHistoryLoading ? (
+        <View style={styles.scroll}>
+          <TransactionSkeleton count={8} />
+        </View>
+      ) : (
+        <FlatList
+          data={transactions}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scroll}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={styles.emptyText}>No transactions detected yet.</Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <TransactionItem
+              platform={item.platform}
+              amount={item.amount}
+              time={item.time}
+              type={item.type}
+              status={item.status}
+              isTip={item.isTip}
+              riderProfit={item.rider_profit}
+              platformDebt={item.platform_debt}
+              syncStatus={item.syncStatus}
+              onPress={() => {
+                if (item.type === "expense") {
+                  setSelectedExpense(item);
+                  setExpenseAmount(item.amount);
+                  setExpenseCategory(item.platform);
+                  setExpenseDescription("");
+                  setEditExpenseModalVisible(true);
+                } else {
+                  setSelectedTransaction(item);
+                  setDeliveryFee("");
+                  setEditModalVisible(true);
+                }
+              }}
+              onLongPress={() => {
+                if (!isSelectMode) {
+                  setIsSelectMode(true);
+                  setSelectedItems([item.id]);
+                }
+              }}
+              isSelectMode={isSelectMode}
+              isSelected={selectedItems.includes(item.id)}
+              onSelect={() => {
+                if (selectedItems.includes(item.id)) {
+                  setSelectedItems(selectedItems.filter((id) => id !== item.id));
+                } else {
+                  setSelectedItems([...selectedItems, item.id]);
+                }
+              }}
+            />
+          )}
+          ListFooterComponent={
+            <View style={styles.summary}>
+              <Text style={styles.summaryLabel}>Today's Transactions</Text>
+              <Text style={styles.summaryValue}>{transactions.length} Total</Text>
+            </View>
+          }
+        />
+      )}
 
       {/* Floating Action Bar for Bulk Actions */}
       {isSelectMode && selectedItems.length > 0 && (

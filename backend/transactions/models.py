@@ -32,14 +32,14 @@ class Transaction(models.Model):
     platform_debt = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     platform = models.CharField(
-        max_length=10, choices=PLATFORM_CHOICES, default="YANGO"
+        max_length=10, choices=PLATFORM_CHOICES, default="YANGO", db_index=True
     )
     department = models.CharField(
         max_length=20, choices=DEPARTMENT_CHOICES, default="REVENUE"
     )
     is_tip = models.BooleanField(default=False)
 
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(db_index=True)
 
     def save(self, *args, **kwargs):
         if self.platform == 'YANGO':
@@ -67,9 +67,9 @@ class Expense(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='expenses')
 
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES)
+    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, db_index=True)
     description = models.TextField(blank=True)
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(db_index=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.category} - GHS {self.amount}"

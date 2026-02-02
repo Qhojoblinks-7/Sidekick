@@ -305,7 +305,7 @@ export const TransactionItem = ({
                   {parseFloat(profitValue).toFixed(0)}
                 </Text>
               </View>
-              {parseFloat(debtValue) > 0 && (
+              {parseFloat(debtValue) >= 0 && platformDebt !== null && (
                 <View style={styles.splitItem}>
                   <Text style={styles.splitLabel}>D:</Text>
                   <Text style={[styles.splitValue, styles.debtValue]}>

@@ -12,8 +12,8 @@ export const registerSessionExpiredHandler = (handler) => {
   return () => sessionExpiredHandlers.delete(handler);
 };
 
-// Trigger all session expiration handlers
-const triggerSessionExpired = async () => {
+// Trigger all session expiration handlers - exported for use in other hooks
+export const triggerSessionExpired = async () => {
   console.log("Session expired, clearing tokens and notifying handlers...");
   // Clear tokens
   await SecureStore.deleteItemAsync("accessToken");
@@ -34,10 +34,15 @@ const usePeriodSummary = (period) => {
         console.error('Period summary API error:', response.status, errorText);
         throw new Error(`Failed to fetch period summary: ${response.status}`);
       }
-      return response.json();
+      const data = await response.json();
+      console.log('[SUMMARY_DEBUG] Period summary fetched:', data);
+      return data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always refetch, no caching
+    cacheTime: 0, // Remove from cache immediately after unmount
     retry: 1,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     onError: async (error) => {
       if (error instanceof SessionExpiredError) {
         await triggerSessionExpired();

@@ -52,8 +52,8 @@ const TransactionList = ({ filteredTransactions }) => {
                 type={type}
                 status={tx.status}
                 isTip={tx.is_tip || false}
-                riderProfit={tx.rider_profit || null}
-                platformDebt={tx.platform_debt || null}
+                riderProfit={tx.rider_profit !== undefined ? tx.rider_profit : null}
+                platformDebt={tx.platform_debt !== undefined ? tx.platform_debt : null}
                 syncStatus={tx.syncStatus || 'synced'}
               />
             );

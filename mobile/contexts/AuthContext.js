@@ -1,18 +1,11 @@
 import React, { createContext, useState, useEffect, useCallback } from "react";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getAccessToken, logout as logoutUser } from "../services/apiService";
+import { getAccessToken, logout as logoutUser, setSessionExpirationCallback } from "../services/apiService";
 import { store } from '../store/store';
-import { loadSettings } from '../store/store';
+import { setDailyTarget, setVehicleType } from '../store/store';
 
 export const AuthContext = createContext();
-
-// Global session expiration callback
-let onSessionExpired = null;
-
-export const setSessionExpirationHandler = (callback) => {
-  onSessionExpired = callback;
-};
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -35,7 +28,12 @@ export const AuthProvider = ({ children }) => {
         const stored = await AsyncStorage.getItem('settings');
         if (stored) {
           const parsed = JSON.parse(stored);
-          store.dispatch(loadSettings(parsed));
+          if (parsed.dailyTarget !== undefined) {
+            store.dispatch(setDailyTarget(parsed.dailyTarget));
+          }
+          if (parsed.vehicleType !== undefined) {
+            store.dispatch(setVehicleType(parsed.vehicleType));
+          }
         }
       } catch (error) {
         console.error("Failed to check auth status or load settings:", error);
@@ -47,14 +45,16 @@ export const AuthProvider = ({ children }) => {
     bootstrapAsync();
   }, []);
 
-  const handleSessionExpired = useCallback(async () => {
-    console.log("Session expired, logging out...");
-    await logoutUser();
-    setIsAuthenticated(false);
-    setUser(null);
-    if (onSessionExpired) {
-      onSessionExpired();
-    }
+  // Set up session expiration callback to notify the app
+  useEffect(() => {
+    const unsubscribe = setSessionExpirationCallback(async () => {
+      console.log("Session expired, logging out...");
+      await logoutUser();
+      setIsAuthenticated(false);
+      setUser(null);
+    });
+
+    return unsubscribe;
   }, []);
 
   const authContext = {
@@ -68,7 +68,6 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setUser(null);
     },
-    onSessionExpired: handleSessionExpired,
   };
 
   return (

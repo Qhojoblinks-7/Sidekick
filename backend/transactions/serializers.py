@@ -38,32 +38,25 @@ class TransactionSerializer(serializers.ModelSerializer):
                 logger.info(f"Duplicate transaction with tx_id: {tx_id}, returning existing")
                 return existing
             except Transaction.DoesNotExist:
-                pass
+                logger.info(f"No duplicate found for tx_id: {tx_id}, proceeding with creation")
+            except Transaction.MultipleObjectsReturned:
+                logger.warning(f"Multiple transactions found for tx_id: {tx_id}, using first")
+                existing = Transaction.objects.filter(tx_id=tx_id).first()
+                return existing
 
         # Automatically assign user from request if not already set
         if 'user' not in validated_data:
-            validated_data['user'] = self.context['request'].user
+            if 'request' in self.context:
+                validated_data['user'] = self.context['request'].user
+            else:
+                logger.error("No request context and no user in validated_data!")
+                raise serializers.ValidationError("Unable to determine user for transaction")
 
         # Ensure created_at is set (fallback to now if not provided)
         if 'created_at' not in validated_data or validated_data['created_at'] is None:
             validated_data['created_at'] = timezone.now()
 
-        # If trip_price is provided, calculate the derived fields
-        if 'trip_price' in validated_data and validated_data['trip_price'] is not None:
-            trip_price = validated_data['trip_price']
-            bonuses = validated_data.get('bonuses', 0)
-            system_fees = validated_data.get('system_fees', 0)
-
-            gross_total = trip_price + bonuses
-            amount_received = gross_total
-            rider_profit = trip_price + bonuses + system_fees
-            platform_debt = -system_fees
-
-            validated_data['gross_total'] = gross_total
-            validated_data['amount_received'] = amount_received
-            validated_data['rider_profit'] = rider_profit
-            validated_data['platform_debt'] = platform_debt
-
+        logger.info(f"Creating transaction with validated_data: {validated_data}")
         return super().create(validated_data)
 
 

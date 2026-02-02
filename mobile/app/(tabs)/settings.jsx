@@ -28,7 +28,6 @@ import {
   setTransactions,
   setExpenses,
   updatePlatformDebt,
-  loadSettings,
   selectIsOnline,
   selectIsSyncing,
   selectLastSyncTime,
@@ -60,20 +59,37 @@ export default function Settings() {
   // Calculate rider stats
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
-  const monthlyEarnings = transactions
-    .filter((tx) => {
-      const txDate = new Date(tx.created_at);
-      return (
-        txDate.getMonth() === currentMonth &&
-        txDate.getFullYear() === currentYear
-      );
-    })
-    .reduce((sum, tx) => sum + parseFloat(tx.rider_profit || 0), 0);
+  const monthlyEarnings = Array.isArray(transactions)
+    ? transactions
+        .filter((tx) => {
+          const txDate = new Date(tx.created_at);
+          return (
+            txDate.getMonth() === currentMonth &&
+            txDate.getFullYear() === currentYear
+          );
+        })
+        .reduce((sum, tx) => sum + parseFloat(tx.rider_profit || 0), 0)
+    : 0;
 
-  const bestTip = Math.max(
-    ...transactions.map((tx) => parseFloat(tx.rider_profit || 0)),
-    0,
-  );
+  const bestTip = Array.isArray(transactions) && transactions.length > 0
+    ? Math.max(...transactions.map((tx) => parseFloat(tx.rider_profit || 0)), 0)
+    : 0;
+
+  // Calculate total debt from transactions as fallback
+  const calculatedTotalDebt = Array.isArray(transactions)
+    ? transactions.reduce((sum, tx) => sum + parseFloat(tx.platform_debt || 0), 0)
+    : 0;
+
+  // Use calculated total debt from transactions (more accurate) or fallback to API value
+  const totalDebt = calculatedTotalDebt > 0 
+    ? calculatedTotalDebt 
+    : (summary?.total_debt || 0);
+
+  // Debug logging
+  console.log('[Settings] Summary:', summary);
+  console.log('[Settings] Transactions count:', transactions?.length || 0);
+  console.log('[Settings] Calculated debt:', calculatedTotalDebt);
+  console.log('[Settings] Total debt:', totalDebt);
 
   // Modal states
   const [targetModalVisible, setTargetModalVisible] = useState(false);
@@ -124,7 +140,18 @@ export default function Settings() {
       if (settingsStr) {
         const settings = JSON.parse(settingsStr);
         console.log('Loading settings from storage:', settings);
-        dispatch(loadSettings(settings));
+        // Only update specific fields to preserve defaults
+        if (settings.dailyTarget !== undefined) {
+          dispatch(setDailyTarget(settings.dailyTarget));
+        }
+        if (settings.vehicleType !== undefined) {
+          dispatch(setVehicleType(settings.vehicleType));
+        }
+        /*
+        if (settings.smsEnabled !== undefined) {
+          dispatch(setSmsEnabled(settings.smsEnabled));
+        }
+        */
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -551,18 +578,24 @@ export default function Settings() {
         {/* Profile Section */}
         <Text style={styles.sectionTitle}>Profile</Text>
         <View style={styles.profileContainer}>
-          <View style={styles.statItem}>
+          <TouchableOpacity 
+            style={styles.statItem}
+            onPress={() => router.push('/earnings')}
+          >
             <Ionicons name="cash-outline" size={24} color={colors.profit} />
             <Text style={styles.statLabel}>Total Earned This Month</Text>
             <Text style={styles.statValue}>
               GH₵ {monthlyEarnings.toFixed(2)}
             </Text>
-          </View>
-          <View style={styles.statItem}>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.statItem}
+            onPress={() => router.push('/earnings')}
+          >
             <Ionicons name="trophy-outline" size={24} color={colors.profit} />
             <Text style={styles.statLabel}>Best Tip Received</Text>
             <Text style={styles.statValue}>GH₵ {bestTip.toFixed(2)}</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Financial Controls */}
@@ -586,14 +619,14 @@ export default function Settings() {
           <Text style={styles.settlementText}>
             Currently holding{" "}
             <Text style={styles.highlight}>
-              GH₵ {Math.abs(summary.total_debt).toFixed(2)}
+              GH₵ {Math.abs(totalDebt).toFixed(2)}
             </Text>{" "}
             in platform cash.
           </Text>
           <Button
             label="Clear Platform Debt"
             onPress={handleClearDebt}
-            disabled={summary.total_debt === 0}
+            disabled={totalDebt === 0}
           />
         </View>
 
@@ -613,6 +646,7 @@ export default function Settings() {
           }
           onPress={syncData}
           isSyncing={isSyncing}
+          marginBottom={50}
         />
 
         {/*

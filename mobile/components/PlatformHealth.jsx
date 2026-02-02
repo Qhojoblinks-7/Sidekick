@@ -7,7 +7,7 @@ import { AnimatedCounter } from "./AnimatedCounter";
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const ProgressRing = ({
-  progress,
+  progress: propProgress,
   color,
   size = 80,
   strokeWidth = 8,
@@ -18,6 +18,9 @@ const ProgressRing = ({
   const { colors } = useContext(ThemeContext);
   const animatedProgress = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Handle edge cases: NaN, Infinity, negative values
+  const progress = isFinite(propProgress) && !isNaN(propProgress) ? Math.max(0, Math.min(propProgress, 100)) : 0;
 
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -103,7 +106,7 @@ const ProgressRing = ({
 
   const containerStyle = [
     ringStyles.ringContainer,
-    isPulsing && { transform: [{ scale: pulseAnim }] },
+    isPulsing && { transform: [{ scale: pulseAnim._value }] },
   ];
 
   return (
@@ -150,15 +153,26 @@ const ProgressRing = ({
 };
 
 export const PlatformHealth = ({
-  boltDebt,
-  yangoDebt,
+  boltDebt = 0,
+  yangoDebt = 0,
   boltLimit = 200,
   yangoLimit = 200,
 }) => {
   const { colors } = useContext(ThemeContext);
 
-  const boltProgress = Math.min((boltDebt / boltLimit) * 100, 100);
-  const yangoProgress = Math.min((yangoDebt / yangoLimit) * 100, 100);
+  // Edge case handling
+  const safeBoltDebt = Math.max(0, parseFloat(boltDebt) || 0);
+  const safeYangoDebt = Math.max(0, parseFloat(yangoDebt) || 0);
+  const safeBoltLimit = Math.max(1, parseFloat(boltLimit) || 1);
+  const safeYangoLimit = Math.max(1, parseFloat(yangoLimit) || 1);
+
+  // Calculate progress with edge cases
+  const boltProgress = Math.min((safeBoltDebt / safeBoltLimit) * 100, 100);
+  const yangoProgress = Math.min((safeYangoDebt / safeYangoLimit) * 100, 100);
+
+  // Check if debt exceeds limit (surplus edge case)
+  const boltExceedsLimit = safeBoltDebt > safeBoltLimit;
+  const yangoExceedsLimit = safeYangoDebt > safeYangoLimit;
 
   const styles = StyleSheet.create({
     container: {
@@ -190,6 +204,22 @@ export const PlatformHealth = ({
       justifyContent: "space-around",
       alignItems: "center",
     },
+    exceededBadge: {
+      position: 'absolute',
+      top: -5,
+      right: -5,
+      backgroundColor: colors.expense,
+      borderRadius: 10,
+      width: 20,
+      height: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    exceededBadgeText: {
+      color: '#fff',
+      fontSize: 10,
+      fontWeight: 'bold',
+    },
   });
 
   return (
@@ -197,22 +227,36 @@ export const PlatformHealth = ({
       <View style={styles.card}>
         <Text style={styles.title}>Platform Status (Debt Limit)</Text>
         <View style={styles.ringsContainer}>
-          <ProgressRing
-            progress={boltProgress}
-            color={colors.bolt?.green || "#00D15D"}
-            size={110}
-            label="Bolt"
-            amount={boltDebt}
-            isPulsing={boltProgress >= 80}
-          />
-          <ProgressRing
-            progress={yangoProgress}
-            color={colors.yango?.yellow || "#FFD600"}
-            size={110}
-            label="Yango"
-            amount={yangoDebt}
-            isPulsing={yangoProgress >= 80}
-          />
+          <View>
+            <ProgressRing
+              progress={boltProgress}
+              color={colors.bolt?.green || "#00D15D"}
+              size={110}
+              label="Bolt"
+              amount={safeBoltDebt}
+              isPulsing={boltProgress >= 80 && !boltExceedsLimit}
+            />
+            {boltExceedsLimit && (
+              <View style={styles.exceededBadge}>
+                <Text style={styles.exceededBadgeText}>!</Text>
+              </View>
+            )}
+          </View>
+          <View>
+            <ProgressRing
+              progress={yangoProgress}
+              color={colors.yango?.yellow || "#FFD600"}
+              size={110}
+              label="Yango"
+              amount={safeYangoDebt}
+              isPulsing={yangoProgress >= 80 && !yangoExceedsLimit}
+            />
+            {yangoExceedsLimit && (
+              <View style={styles.exceededBadge}>
+                <Text style={styles.exceededBadgeText}>!</Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
     </View>
