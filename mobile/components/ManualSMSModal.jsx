@@ -178,7 +178,7 @@ const ManualSMSModal = ({ visible, onClose }) => {
       backgroundColor: colors.profit,
     },
     cancelButtonText: {
-      color: colors.textMuted,
+      color: '#FFFFFF',
       fontWeight: "bold",
     },
     submitButtonText: {

@@ -46,9 +46,16 @@ export default function Dashboard() {
 
   const getInitialPeriod = () => {
     const now = new Date();
-    const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    // Start of today (12 AM)
+    const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    // Start of tomorrow (12 AM) - exclusive end for date range
+    const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
     return { type: "today", startDate, endDate };
+  };
+
+  // Get current date with time for transaction
+  const getCurrentDate = () => {
+    return new Date();
   };
 
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -60,7 +67,7 @@ export default function Dashboard() {
   const [manualAmount, setManualAmount] = useState("");
   const [amountReceived, setAmountReceived] = useState("");
   const [manualPlatform, setManualPlatform] = useState("YANGO");
-  const [transactionDate, setTransactionDate] = useState(new Date());
+  const [transactionDate, setTransactionDate] = useState(getCurrentDate());
   const [transactionDateModalVisible, setTransactionDateModalVisible] = useState(false);
   const [tripPrice, setTripPrice] = useState("");
   const [bonuses, setBonuses] = useState("");
@@ -76,7 +83,7 @@ export default function Dashboard() {
     setManualAmount("");
     setAmountReceived("");
     setManualPlatform("YANGO");
-    setTransactionDate(new Date());
+    setTransactionDate(getCurrentDate());
     setTripPrice("");
     setBonuses("");
     setSystemFees("");
@@ -164,8 +171,9 @@ export default function Dashboard() {
   };
   const handleDateSelect = (selectedPeriod) => {
     console.log('[HANDLE_DATE] Function started');
-    const date = selectedPeriod.startDate;
-    console.log('[HANDLE_DATE] Date:', date.toISOString());
+    // Use current time for transaction (not midnight)
+    const date = getCurrentDate();
+    console.log('[HANDLE_DATE] Transaction date:', date.toISOString());
     setTransactionDate(date);
     
     let tp = parseFloat(tripPrice);
@@ -430,7 +438,7 @@ export default function Dashboard() {
       borderRadius: 8,
     },
     syncButtonText: {
-      color: colors.textMuted,
+      color: '#FFFFFF',
       fontSize: 12,
       fontWeight: '600',
       marginLeft: 4,
@@ -500,10 +508,10 @@ export default function Dashboard() {
     },
     platformText: {
       fontWeight: "bold",
-      color: colors.textMuted,
+      color: '#FFFFFF',
     },
     selectedPlatformText: {
-      color: colors.textMain,
+      color: '#FFFFFF',
     },
     modalButtons: {
       flexDirection: "row",
@@ -526,7 +534,7 @@ export default function Dashboard() {
       backgroundColor: colors.profit,
     },
     cancelButtonText: {
-      color: colors.textMuted,
+      color: '#FFFFFF',
       fontWeight: "bold",
     },
     saveButtonText: {

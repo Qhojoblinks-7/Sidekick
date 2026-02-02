@@ -35,7 +35,7 @@ const PeriodFilter = ({
       backgroundColor: "rgba(34, 197, 94, 0.1)",
     },
     dropdownText: {
-      color: colors.textMuted,
+      color: '#FFFFFF',
       fontSize: 14,
       fontWeight: "bold",
     },

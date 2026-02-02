@@ -98,7 +98,7 @@ const SMSConsentModal = ({ visible, onConsent, onDeny }) => {
             ]}
             onPress={onDeny}
           >
-            <Text style={[styles.buttonText, { color: colors.textMuted }]}>
+            <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
               Deny
             </Text>
           </TouchableOpacity>

@@ -43,9 +43,12 @@ const CustomDateModal = ({
         setCustomDateModalVisible(false);
         
         if (event.type === 'set' && selectedDate) {
-          setCustomDate(selectedDate);
-          const startDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
-          const endDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() + 1);
+          // Set to midnight (12 AM) of the selected date
+          const midnightDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 0, 0, 0, 0);
+          setCustomDate(midnightDate);
+          const startDate = new Date(midnightDate);
+          const endDate = new Date(midnightDate);
+          endDate.setDate(endDate.getDate() + 1); // 12 AM next day
           setSelectedPeriod({ type: "custom", startDate, endDate });
         }
       },
@@ -81,8 +84,12 @@ const CustomDateModal = ({
   };
 
   const handleIosSave = () => {
-    const startDate = new Date(customDate.getFullYear(), customDate.getMonth(), customDate.getDate());
-    const endDate = new Date(customDate.getFullYear(), customDate.getMonth(), customDate.getDate() + 1);
+    // Set to midnight (12 AM) of the selected date
+    const midnightDate = new Date(customDate.getFullYear(), customDate.getMonth(), customDate.getDate(), 0, 0, 0, 0);
+    setCustomDate(midnightDate);
+    const startDate = new Date(midnightDate);
+    const endDate = new Date(midnightDate);
+    endDate.setDate(endDate.getDate() + 1); // 12 AM next day
     setSelectedPeriod({ type: "custom", startDate, endDate });
     setCustomDateModalVisible(false);
   };

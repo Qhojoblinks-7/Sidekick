@@ -221,7 +221,7 @@ export const EditTransactionModal = ({
       borderColor: colors.border,
     },
     cancelButtonText: {
-      color: colors.textMuted,
+      color: '#FFFFFF',
       fontWeight: '600',
       fontSize: 14,
     },

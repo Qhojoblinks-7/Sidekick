@@ -35,13 +35,9 @@ const TransactionList = ({ filteredTransactions }) => {
               hour12: true,
             });
 
-            let type = "profit";
-            let amount = tx.rider_profit;
-
-            if (parseFloat(tx.platform_debt) > 0) {
-              type = "debt";
-              amount = tx.platform_debt;
-            }
+            // Always show as profit with P/D breakdown
+            const type = "profit";
+            const amount = tx.rider_profit;
 
             return (
               <TransactionItem
@@ -52,8 +48,8 @@ const TransactionList = ({ filteredTransactions }) => {
                 type={type}
                 status={tx.status}
                 isTip={tx.is_tip || false}
-                riderProfit={tx.rider_profit !== undefined ? tx.rider_profit : null}
-                platformDebt={tx.platform_debt !== undefined ? tx.platform_debt : null}
+                riderProfit={tx.rider_profit != null ? parseFloat(tx.rider_profit) : 0}
+                platformDebt={tx.platform_debt != null ? parseFloat(tx.platform_debt) : 0}
                 syncStatus={tx.syncStatus || 'synced'}
               />
             );

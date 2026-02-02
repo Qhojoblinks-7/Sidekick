@@ -90,14 +90,9 @@ export default function History() {
         hour12: true,
       });
 
-      // Determine type based on amounts
-      let type = "profit";
-      let amount = tx.rider_profit;
-
-      if (parseFloat(tx.platform_debt) > 0) {
-        type = "debt";
-        amount = tx.platform_debt;
-      }
+      // Always show as profit type with P/D breakdown (same as dashboard)
+      const type = "profit";
+      const amount = tx.rider_profit;
 
       return {
         id: `tx-${tx.id}`,
@@ -107,8 +102,8 @@ export default function History() {
         type: type,
         status: tx.status,
         created_at: createdAt,
-        rider_profit: parseFloat(tx.rider_profit),
-        platform_debt: parseFloat(tx.platform_debt || 0),
+        rider_profit: tx.rider_profit != null ? parseFloat(tx.rider_profit) : 0,
+        platform_debt: tx.platform_debt != null ? parseFloat(tx.platform_debt) : 0,
         isTip: tx.is_tip || false,
         syncStatus:
           tx.status === "synced"
@@ -446,7 +441,7 @@ export default function History() {
       backgroundColor: colors.profit,
     },
     cancelButtonText: {
-      color: colors.textMuted,
+      color: '#FFFFFF',
       fontWeight: "bold",
     },
     saveButtonText: {

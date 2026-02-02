@@ -317,10 +317,10 @@ export default function Login() {
             <ActivityIndicator color={colors.background} />
           ) : (
             <>
-              <Text style={{ fontWeight: 'bold', marginRight: 8, color: colors.background }}>
+              <Text style={{ fontWeight: 'bold', marginRight: 8, color: '#FFFFFF' }}>
                 {isRegistering ? "CREATE ACCOUNT" : "SECURE SIGN IN"}
               </Text>
-              <Ionicons name="arrow-forward" size={18} color={colors.background} />
+              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
             </>
           )}
         </TouchableOpacity>

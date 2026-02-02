@@ -72,7 +72,7 @@ export default function Settings() {
     : 0;
 
   const bestTip = Array.isArray(transactions) && transactions.length > 0
-    ? Math.max(...transactions.map((tx) => parseFloat(tx.rider_profit || 0)), 0)
+    ? Math.max(...transactions.map((tx) => parseFloat(tx.tip_amount || tx.rider_profit || 0)), 0)
     : 0;
 
   // Calculate total debt from transactions as fallback

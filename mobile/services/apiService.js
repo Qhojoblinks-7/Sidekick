@@ -40,26 +40,36 @@ export const clearTokenCache = () => {
 };
 
 // Refresh access token
-export const refreshAccessToken = async () => {
+const refreshAccessToken = async () => {
   try {
     const refreshToken = await getRefreshToken();
-    if (!refreshToken) return null;
+    if (!refreshToken) {
+      console.log('[TOKEN] No refresh token available');
+      return null;
+    }
 
-    const response = await fetch(`${API_URL}/api/auth/refresh/`, {
+    console.log('[TOKEN] Attempting token refresh...');
+    const response = await fetch(`${API_URL}/api/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh: refreshToken }),
     });
 
+    console.log('[TOKEN] Refresh response status:', response.status);
+
     if (response.ok) {
       const data = await response.json();
+      console.log('[TOKEN] Refresh successful, new access token received');
       await SecureStore.setItemAsync("accessToken", data.access);
       cachedAccessToken = data.access; // Update cache
       return data.access;
     }
+    
+    const errorText = await response.text();
+    console.log('[TOKEN] Refresh failed:', response.status, errorText);
     return null;
   } catch (error) {
-    console.error("Token refresh failed:", error);
+    console.error("[TOKEN] Refresh error:", error);
     return null;
   }
 };
@@ -112,7 +122,7 @@ export const apiCall = async (endpoint, options = {}) => {
           ...options,
           headers,
         });
-        console.log("Token refreshed successfully");
+        console.log("Token refreshed successfully, retrying request");
       } else {
         // Refresh failed, need to logout and notify app
         console.error("Token refresh failed, clearing tokens");

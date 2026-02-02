@@ -76,7 +76,7 @@ const Toast = () => {
         },
       ]}
     >
-      <Text style={[styles.message, { color: colors.textMain }]}>
+      <Text style={[styles.message, { color: '#FFFFFF' }]}>
         {toast.message}
       </Text>
     </Animated.View>

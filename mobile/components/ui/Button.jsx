@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.expense,
   },
   text: {
-    color: Colors.textMain,
+    color: '#FFFFFF',
     textAlign: 'center',
     fontWeight: '900',
     fontSize: 18,
