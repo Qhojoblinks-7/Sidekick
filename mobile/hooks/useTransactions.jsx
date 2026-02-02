@@ -7,7 +7,7 @@ import * as SecureStore from "expo-secure-store";
 
 const updateSummary = async (dispatch) => {
   try {
-    const response = await apiCall('/api/transactions/summary/daily/');
+    const response = await apiCall('/api/summary/daily/');
     if (response.ok) {
       const summary = await response.json();
       dispatch(setSummary(summary));

@@ -1,14 +1,8 @@
 import * as SecureStore from "expo-secure-store";
+import { API_BASE_URL } from '../constants/API';
 
-// API URL with proper fallback for development and production
-// IMPORTANT: Set EXPO_PUBLIC_API_URL in your environment variables
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
-
-// Validate API URL is configured
-if (!process.env.EXPO_PUBLIC_API_URL) {
-  console.warn('WARNING: EXPO_PUBLIC_API_URL is not set! Using fallback: http://localhost:8000');
-  console.warn('Please set EXPO_PUBLIC_API_URL in your .env file or environment variables');
-}
+// API URL - use the configured constant
+const API_URL = API_BASE_URL;
 
 // Session expiration callback - set by the app
 let onSessionExpired = null;
@@ -21,20 +15,9 @@ export const setSessionExpirationCallback = (callback) => {
 let cachedAccessToken = null;
 let cachedRefreshToken = null;
 
-// Initialize token cache on app load
-const initializeTokenCache = async () => {
-  if (cachedAccessToken === null) {
-    cachedAccessToken = await SecureStore.getItemAsync("accessToken");
-  }
-  if (cachedRefreshToken === null) {
-    cachedRefreshToken = await SecureStore.getItemAsync("refreshToken");
-  }
-  return { accessToken: cachedAccessToken, refreshToken: cachedRefreshToken };
-};
-
-// Get cached or fresh access token
-const getAccessTokenInternal = async (forceRefresh = false) => {
-  if (!forceRefresh && cachedAccessToken !== null) {
+// Get cached or fresh access token - exported for AuthContext
+export const getAccessToken = async () => {
+  if (cachedAccessToken !== null) {
     return cachedAccessToken;
   }
   cachedAccessToken = await SecureStore.getItemAsync("accessToken");
@@ -42,7 +25,7 @@ const getAccessTokenInternal = async (forceRefresh = false) => {
 };
 
 // Get cached or fresh refresh token
-const getRefreshTokenInternal = async () => {
+const getRefreshToken = async () => {
   if (cachedRefreshToken !== null) {
     return cachedRefreshToken;
   }
@@ -54,17 +37,6 @@ const getRefreshTokenInternal = async () => {
 export const clearTokenCache = () => {
   cachedAccessToken = null;
   cachedRefreshToken = null;
-};
-
-// Get stored tokens (with caching)
-export const getAccessToken = async () => {
-  await initializeTokenCache();
-  return cachedAccessToken;
-};
-
-export const getRefreshToken = async () => {
-  await initializeTokenCache();
-  return cachedRefreshToken;
 };
 
 // Refresh access token
@@ -113,7 +85,7 @@ export const apiCall = async (endpoint, options = {}) => {
   console.log(`API Call: ${endpoint}`, { options });
   console.log(`Full URL: ${API_URL}${endpoint}`);
 
-  let accessToken = await getAccessTokenInternal();
+  let accessToken = await getAccessToken();
 
   const headers = {
     "Content-Type": "application/json",

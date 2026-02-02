@@ -106,19 +106,24 @@ export default function Dashboard() {
       });
       if (response.ok) {
         const newTransaction = await response.json();
+        console.log('[TX_DEBUG] New transaction from API:', newTransaction);
+        
+        // Optimistically add to Redux store immediately
         dispatch(addTransactionAction(newTransaction));
+        console.log('[TX_DEBUG] Dispatched to Redux');
         
-        // DEBUG: Log the new transaction
-        console.log('[TX_DEBUG] New transaction saved:', newTransaction);
-        console.log('[TX_DEBUG] platform_debt:', newTransaction.platform_debt);
-        
-        // Invalidate React Query cache to refresh data
+        // Invalidate React Query cache to refresh data from server
+        console.log('[TX_DEBUG] Before invalidation - invalidating dashboardData and periodSummary');
         await queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
-        await queryClient.invalidateQueries({ queryKey: ['historyData'] });
         await queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
         
-        // Force refetch the period summary immediately
-        await queryClient.refetchQueries({ queryKey: ['periodSummary'] });
+        // Force refetch immediately - use refetchQueries with exact match
+        console.log('[TX_DEBUG] Refetching queries...');
+        const refetchResults = await Promise.all([
+          queryClient.refetchQueries({ queryKey: ['dashboardData'], exact: false }),
+          queryClient.refetchQueries({ queryKey: ['periodSummary'], exact: false }),
+        ]);
+        console.log('[TX_DEBUG] Refetch results:', refetchResults.map(r => ({ status: r[0]?.status, data: r[0]?.data })));
         
         console.log('[TX_DEBUG] Cache invalidated and refetched');
         
@@ -160,20 +165,48 @@ export default function Dashboard() {
     }
   };
   const handleDateSelect = (selectedPeriod) => {
+    console.log('[HANDLE_DATE] Function started');
     const date = selectedPeriod.startDate;
+    console.log('[HANDLE_DATE] Date:', date.toISOString());
     setTransactionDate(date);
+    
+    let tp = parseFloat(tripPrice);
+    let b = parseFloat(bonuses || 0);
+    let sf = parseFloat(systemFees || 0);
+    let gt = parseFloat(grossTotal);
+    
+    let tripPlusBonuses = tp + b;
+    let tipAmount = gt - tripPlusBonuses;
+    
+    console.log('[HANDLE_DATE] Inputs:', { tp, b, sf, gt, tripPlusBonuses, tipAmount });
+    
+    // Validate: gross_total must be >= trip_price + bonuses
+    if (gt < tripPlusBonuses) {
+      Alert.alert(
+        "Invalid Amount",
+        `Gross Total (GHS ${gt}) is less than Trip + Bonuses (GHS ${tripPlusBonuses}).\n\nThis would result in a loss. Please check your entries.`,
+        [{ text: "OK", onPress: () => setTransactionDateModalVisible(false) }]
+      );
+      return;
+    }
+    
     let riderProfit, platformDebt, isTip = false, amtReceived;
-    let tp = 0, b = 0, sf = 0, gt = 0;
     
     if (manualPlatform === "YANGO") {
-      tp = parseFloat(tripPrice);
-      b = parseFloat(bonuses || 0);
-      sf = parseFloat(systemFees || 0);
-      gt = parseFloat(grossTotal);
+      // For Yango: platform_debt = system_fees
       riderProfit = tp + b - sf;
+      platformDebt = sf;
       amtReceived = gt;
-      platformDebt = parseFloat((amtReceived - riderProfit).toFixed(2));
-      isTip = riderProfit < amtReceived;
+      
+      // Tip scenario: if customer paid more than (trip + bonuses)
+      isTip = tipAmount > 0;
+      
+      console.log('[HANDLE_DATE] Yango calculation:', { 
+        riderProfit, 
+        platformDebt, 
+        isTip, 
+        tipAmount: isTip ? tipAmount : 0 
+      });
     } else {
       const fullFee = parseFloat(manualAmount);
       amtReceived = parseFloat(amountReceived);
@@ -186,6 +219,7 @@ export default function Dashboard() {
         platformDebt = 0;
         isTip = fullFee > amtReceived;
       }
+      console.log('[HANDLE_DATE] Bolt calculation:', { fullFee, amtReceived, riderProfit, platformDebt });
     }
     riderProfit = parseFloat(riderProfit.toFixed(2));
     platformDebt = parseFloat(platformDebt.toFixed(2));
@@ -201,23 +235,23 @@ export default function Dashboard() {
       created_at: date.toISOString(),
     };
     
-    // Add Yango-specific fields
-    if (manualPlatform === "YANGO") {
-      transactionData.trip_price = tp;
-      transactionData.bonuses = b;
-      transactionData.system_fees = sf;
-      transactionData.gross_total = gt;
+    // Add Bolt-specific fields
+    if (manualPlatform === "BOLT") {
+      transactionData.full_fee = parseFloat(manualAmount);
+      transactionData.tip_amount = isTip ? parseFloat((parseFloat(manualAmount) - amtReceived).toFixed(2)) : 0;
     }
     
-    console.log('[TX_DEBUG] Sending transaction:', transactionData);
+    console.log('[HANDLE_DATE] Final transaction:', transactionData);
     
     addTransaction(transactionData, {
       onSuccess: () => {
+        console.log('[HANDLE_DATE] ✅ Transaction saved successfully!');
         setCurrentStep(0);
         resetTransactionStates();
         showToast("Manual transaction added successfully!", "success");
       },
       onError: (error) => {
+        console.log('[HANDLE_DATE] ❌ Transaction error:', error.message);
         showToast(`Failed to add transaction: ${error.message}`, "error");
       },
     });

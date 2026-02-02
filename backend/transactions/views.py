@@ -30,15 +30,25 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # Filter transactions by current user only
         logger.info(f"TransactionViewSet get_queryset called by user: {self.request.user}")
-        return Transaction.objects.filter(user=self.request.user)
+        queryset = Transaction.objects.filter(user=self.request.user)
+        count = queryset.count()
+        logger.info(f"TransactionViewSet returning {count} transactions for user {self.request.user.id}")
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        logger.info(f"TransactionViewSet list response data: {response.data}")
+        return response
 
     def perform_create(self, serializer):
         # Automatically assign user on creation
         if self.request.user.is_authenticated:
+            logger.info(f"perform_create: Saving transaction for user: {self.request.user.id} ({self.request.user.username})")
             serializer.save(user=self.request.user)
         else:
             # For SMS bridge, assign to first user (for testing)
             first_user = User.objects.first()
+            logger.warning(f"perform_create: No authenticated user, assigning to first user: {first_user.id if first_user else 'None'}")
             serializer.save(user=first_user)
 
 

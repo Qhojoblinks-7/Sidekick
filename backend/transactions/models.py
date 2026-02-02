@@ -38,6 +38,7 @@ class Transaction(models.Model):
         max_length=20, choices=DEPARTMENT_CHOICES, default="REVENUE"
     )
     is_tip = models.BooleanField(default=False)
+    tip_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     created_at = models.DateTimeField(db_index=True)
 

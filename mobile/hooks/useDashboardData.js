@@ -46,14 +46,23 @@ const useDashboardData = () => {
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { data, isLoading, refetch, isFetching } = useDashboardDataReact();
+  
+  console.log('[DASHBOARD_HOOK] useDashboardData called, data:', data?.transactions?.length || 0);
 
   // Sync React Query data to Redux store
   React.useEffect(() => {
     if (data) {
+      console.log('[DASHBOARD_DATA] Data received:', {
+        summary: !!data.summary,
+        transactions: data.transactions?.length || 0,
+        expenses: data.expenses?.length || 0
+      });
+      
       if (data.summary) {
         dispatch(setSummary(data.summary));
       }
       if (data.transactions) {
+        console.log('[DASHBOARD_DATA] Syncing', data.transactions.length, 'transactions to Redux');
         dispatch(setTransactions(data.transactions));
       }
       if (data.expenses) {
