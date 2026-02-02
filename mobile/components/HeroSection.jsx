@@ -146,7 +146,7 @@ export const HeroSection = ({ netProfit, income, expenses, target }) => {
             value={Math.abs(netProfit || 0)}
             prefix={isNegative ? "-" : ""}
             style={[styles.netProfitAmount, { color: profitColor }]}
-            duration={1200}
+            duration={400}
           />
           <Text style={[styles.netProfitCurrency, { color: profitColor }]}>
             GH₵
@@ -165,12 +165,12 @@ export const HeroSection = ({ netProfit, income, expenses, target }) => {
         <View style={styles.pillsContainer}>
           <View style={[styles.pill, styles.incomePill]}>
             <Text style={[styles.pillText, styles.incomeText]}>
-              Income: <AnimatedCounter value={income || 0} duration={1000} decimals={2} />
+              Income: <AnimatedCounter value={income || 0} duration={300} decimals={2} />
             </Text>
           </View>
           <View style={[styles.pill, styles.expensePill]}>
             <Text style={[styles.pillText, styles.expenseText]}>
-              Expenses: <AnimatedCounter value={expenses || 0} duration={1000} decimals={2} />
+              Expenses: <AnimatedCounter value={expenses || 0} duration={300} decimals={2} />
             </Text>
           </View>
         </View>
@@ -184,8 +184,8 @@ export const HeroSection = ({ netProfit, income, expenses, target }) => {
             </Text>
             <Text style={styles.goalAmountText}>
               {isNegative ? "Shortfall: " : ""}GH₵{" "}
-              <AnimatedCounter value={Math.abs(netProfit) || 0} duration={1000} decimals={2} />/GH₵{" "}
-              <AnimatedCounter value={target || 0} duration={1000} decimals={2} />
+              <AnimatedCounter value={Math.abs(netProfit) || 0} duration={300} decimals={2} />/GH₵{" "}
+              <AnimatedCounter value={target || 0} duration={300} decimals={2} />
             </Text>
           </View>
           <View style={styles.progressBarBackground}>

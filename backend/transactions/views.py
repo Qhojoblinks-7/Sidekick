@@ -159,12 +159,23 @@ class PeriodSummaryView(APIView):
         except ValueError:
             return Response({'error': 'Invalid date format'}, status=400)
 
+        logger.info(f"[PERIOD_DEBUG] PeriodSummary request by user: {request.user.id}")
+        logger.info(f"[PERIOD_DEBUG] Date range: start={start}, end={end}")
+
+        # Check total transactions for user
+        total_user_transactions = Transaction.objects.filter(user=request.user).count()
+        logger.info(f"[PERIOD_DEBUG] Total transactions for user: {total_user_transactions}")
+
+        # Check transactions in date range
+        transactions_in_range = Transaction.objects.filter(user=request.user, created_at__range=(start, end))
+        logger.info(f"[PERIOD_DEBUG] Transactions in range: {transactions_in_range.count()}")
+
         # Calculate Total Profit from Trips
         profit_query = Transaction.objects.filter(user=request.user, created_at__range=(start, end)).aggregate(
             Sum("rider_profit")
         )
         total_profit = profit_query["rider_profit__sum"] or 0
-        logger.info(f"[CALC_DEBUG] PeriodSummary - Total profit query result: {profit_query}, total_profit: {total_profit}")
+        logger.info(f"[PERIOD_DEBUG] Total profit query result: {profit_query}, total_profit: {total_profit}")
 
         # Calculate Total Expenses
         expenses_query = Expense.objects.filter(user=request.user, created_at__range=(start, end)).aggregate(Sum("amount"))

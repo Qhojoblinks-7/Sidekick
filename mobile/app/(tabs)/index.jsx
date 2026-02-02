@@ -119,11 +119,9 @@ export default function Dashboard() {
         
         // Force refetch immediately - use refetchQueries with exact match
         console.log('[TX_DEBUG] Refetching queries...');
-        const refetchResults = await Promise.all([
-          queryClient.refetchQueries({ queryKey: ['dashboardData'], exact: false }),
-          queryClient.refetchQueries({ queryKey: ['periodSummary'], exact: false }),
-        ]);
-        console.log('[TX_DEBUG] Refetch results:', refetchResults.map(r => ({ status: r[0]?.status, data: r[0]?.data })));
+        await queryClient.refetchQueries({ queryKey: ['dashboardData'], exact: false });
+        await queryClient.refetchQueries({ queryKey: ['periodSummary'], exact: false });
+        console.log('[TX_DEBUG] Refetch complete');
         
         console.log('[TX_DEBUG] Cache invalidated and refetched');
         

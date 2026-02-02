@@ -61,7 +61,7 @@ const ProgressRing = ({
   useEffect(() => {
     Animated.timing(animatedProgress, {
       toValue: progress,
-      duration: 1000,
+      duration: 400,
       useNativeDriver: true,
       easing: Easing.out(Easing.ease),
     }).start();
@@ -140,12 +140,12 @@ const ProgressRing = ({
           value={progress}
           suffix="%"
           style={[ringStyles.ringPercentage, { color: ringColor }]}
-          duration={1000}
+          duration={300}
           decimals={0}
         />
         <Text style={ringStyles.ringLabelText}>{label}</Text>
         <Text style={ringStyles.ringAmount}>
-          GH₵ <AnimatedCounter value={amount || 0} duration={1000} decimals={2} />
+          GH₵ <AnimatedCounter value={amount || 0} duration={300} decimals={2} />
         </Text>
       </View>
     </View>

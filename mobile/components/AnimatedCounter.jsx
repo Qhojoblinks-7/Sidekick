@@ -3,7 +3,7 @@ import { Text, Animated } from "react-native";
 
 export const AnimatedCounter = ({
   value,
-  duration = 1000,
+  duration = 400,
   style,
   prefix = "",
   suffix = "",

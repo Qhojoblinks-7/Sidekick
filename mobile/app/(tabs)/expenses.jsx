@@ -82,7 +82,7 @@ export default function Expenses() {
   useEffect(() => {
     Animated.timing(progressWidthAnim, {
       toValue: burnPercentage,
-      duration: 1200,
+      duration: 400,
       useNativeDriver: false,
       easing: Easing.out(Easing.ease),
     }).start();
@@ -429,7 +429,7 @@ export default function Expenses() {
                 value={todayExpenses}
                 prefix="-GH₵ "
                 style={styles.burnMeterValue}
-                duration={1200}
+                duration={400}
                 decimals={2}
               />
               <Text style={styles.burnMeterSubtext}>
@@ -437,7 +437,7 @@ export default function Expenses() {
                   value={burnPercentage}
                   suffix="% of daily earnings"
                   style={styles.burnMeterSubtext}
-                  duration={1200}
+                  duration={400}
                   decimals={0}
                 />
               </Text>
