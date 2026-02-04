@@ -68,6 +68,88 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
+class ClearDebtView(APIView):
+    """
+    Clear platform debt by creating offset transactions
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        logger.info(f"ClearDebtView called by user: {user.id}")
+
+        try:
+            # Get current total debt
+            current_debt = Transaction.objects.filter(user=user).aggregate(
+                total_debt=Sum('platform_debt')
+            )['total_debt'] or 0
+
+            if current_debt == 0:
+                return Response({
+                    'success': True,
+                    'message': 'No debt to clear',
+                    'amount_cleared': 0
+                })
+
+            # Create offset transactions for each platform
+            yango_debt = Transaction.objects.filter(
+                user=user, platform='YANGO'
+            ).aggregate(total=Sum('platform_debt'))['total'] or 0
+
+            bolt_debt = Transaction.objects.filter(
+                user=user, platform='BOLT'
+            ).aggregate(total=Sum('platform_debt'))['total'] or 0
+
+            cleared_count = 0
+
+            # Create Yango debt offset if there's Yango debt
+            if yango_debt > 0:
+                Transaction.objects.create(
+                    user=user,
+                    tx_id=f'debt-clear-yango-{int(datetime.now().timestamp())}',
+                    amount_received=0,
+                    rider_profit=0,
+                    platform_debt=-yango_debt,  # Negative debt to offset
+                    platform='YANGO',
+                    department='INVESTMENT',
+                    is_tip=False,
+                    tip_amount=0,
+                    created_at=datetime.now()
+                )
+                cleared_count += 1
+                logger.info(f"Created Yango debt offset: {yango_debt}")
+
+            # Create Bolt debt offset if there's Bolt debt
+            if bolt_debt > 0:
+                Transaction.objects.create(
+                    user=user,
+                    tx_id=f'debt-clear-bolt-{int(datetime.now().timestamp())}',
+                    amount_received=0,
+                    rider_profit=0,
+                    platform_debt=-bolt_debt,  # Negative debt to offset
+                    platform='BOLT',
+                    department='REVENUE',
+                    is_tip=False,
+                    tip_amount=0,
+                    created_at=datetime.now()
+                )
+                cleared_count += 1
+                logger.info(f"Created Bolt debt offset: {bolt_debt}")
+
+            return Response({
+                'success': True,
+                'message': f'Debt cleared with {cleared_count} offset transaction(s)',
+                'amount_cleared': float(current_debt)
+            })
+
+        except Exception as e:
+            logger.error(f"Error clearing debt: {e}")
+            return Response({
+                'success': False,
+                'message': f'Error clearing debt: {str(e)}'
+            }, status=400)
+
+
 class DailySummaryView(APIView):
     permission_classes = [IsAuthenticated]
 

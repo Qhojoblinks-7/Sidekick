@@ -226,22 +226,35 @@ export default function Settings() {
   const handleClearDebt = async () => {
     Alert.alert(
       "Settle Debt",
-      "Are you sure you have paid Bolt/Yango? This will reset your Debt Card to GH₵ 0.00.",
+      "Are you sure you have paid Bolt/Yango? This will clear your platform debt.",
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Yes, Paid",
           onPress: async () => {
             try {
-              // Update Redux store to clear debt
-              dispatch(updatePlatformDebt(0));
-              showAlert("Success", "Platform debt has been cleared.");
+              dispatch(setSyncing(true));
+              const response = await apiCall('/api/debt/clear/', {
+                method: 'POST',
+              });
+              
+              if (response.ok) {
+                const data = await response.json();
+                // Refresh data from server
+                await syncData();
+                showAlert("Success", `Debt of GH₵ ${data.amount_cleared.toFixed(2)} has been cleared.`);
+              } else {
+                showAlert("Error", "Failed to clear debt. Please try again.");
+              }
             } catch (error) {
               showAlert("Error", "Failed to clear debt. Please try again.");
+            } finally {
+              dispatch(setSyncing(false));
             }
           },
         },
       ],
+      { cancelable: false },
     );
   };
 
@@ -355,7 +368,7 @@ export default function Settings() {
       backgroundColor: colors.background,
     },
     scroll: {
-      height: 600,
+      flex: 1,
       paddingHorizontal: 16,
       paddingTop: 24,
       paddingBottom: 150,
