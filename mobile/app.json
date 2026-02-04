@@ -7,15 +7,7 @@
     "icon": "./assets/brand-icon.png",
     "android": {
       "package": "com.sidekick.deliverytracker",
-      "permissions": [
-        "RECEIVE_SMS",
-        "READ_SMS"
-      ],
-      "intentFilters": [
-        {
-          "action": "android.provider.Telephony.SMS_RECEIVED"
-        }
-      ]
+      "permissions": []
     },
     "ios": {
       "bundleIdentifier": "com.sidekick.deliverytracker",
@@ -33,10 +25,10 @@
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "2.0.21",
-            "minSdkVersion": 34,
-            "compileSdkVersion": 36,
-            "targetSdkVersion": 36
+            "kotlinVersion": "1.9.22",
+            "minSdkVersion": 26,
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34
           }
         }
       ]

@@ -23,7 +23,6 @@ import {
   setLastSyncTime,
   setDailyTarget,
   setVehicleType,
-  setSmsEnabled,
   setSummary,
   setTransactions,
   setExpenses,
@@ -33,13 +32,10 @@ import {
   selectLastSyncTime,
   selectDailyTarget,
   selectVehicleType,
-  selectSmsEnabled,
   selectSummary,
   selectTransactions,
 } from "../../store/store";
 import { useAuth } from "../../hooks/useAuth";
-// import SMSConsentModal from "../../components/SMSConsentModal";
-// import { requestSMSPermissions, startLiveTracking } from "../../services/smsService";
 
 export default function Settings() {
   console.log('Settings screen rendered');
@@ -52,7 +48,6 @@ export default function Settings() {
   const lastSyncTime = useSelector(selectLastSyncTime);
   const dailyTarget = useSelector(selectDailyTarget);
   const vehicleType = useSelector(selectVehicleType);
-  const smsEnabled = useSelector(selectSmsEnabled);
   const summary = useSelector(selectSummary);
   const transactions = useSelector(selectTransactions);
 
@@ -98,7 +93,6 @@ export default function Settings() {
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
   const [tempTarget, setTempTarget] = useState("");
-  const [consentModalVisible, setConsentModalVisible] = useState(false);
 
   const vehicleTypes = ["Bicycle", "Motorcycle", "Car"];
 
@@ -170,7 +164,7 @@ export default function Settings() {
       }
     };
     saveSettingsToStorage();
-  }, [dailyTarget, vehicleType, smsEnabled]);
+  }, [dailyTarget, vehicleType]);
 
   const checkBackendConnection = async () => {
     try {
@@ -558,7 +552,7 @@ export default function Settings() {
       minWidth: 80,
     },
     alertButtonText: {
-      color: colors.textMain,
+      color: '#ffffff',
       fontWeight: "bold",
       fontSize: 16,
     },
@@ -749,11 +743,11 @@ export default function Settings() {
           onRequestClose={() => setAlertModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.alertModalContent}>
+            <View style={[styles.alertModalContent, { backgroundColor: '#FFFFFF' }]}>
               <Text style={styles.modalTitle}>{alertTitle}</Text>
               <Text style={styles.alertMessage}>{alertMessage}</Text>
               <TouchableOpacity
-                style={[styles.modalButton, styles.alertButton]}
+                style={styles.alertButton}
                 onPress={() => setAlertModalVisible(false)}
               >
                 <Text style={styles.alertButtonText}>OK</Text>

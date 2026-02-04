@@ -11,7 +11,8 @@ import {
   TextInput,
   Vibration,
   Platform,
-  Easing
+  Easing,
+  Keyboard
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeContext } from '../../contexts/ThemeContext';
@@ -19,7 +20,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { apiCall } from '../../services/apiService';
 import { useSelector, useDispatch } from 'react-redux';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { addExpense, selectDailyTarget } from '../../store/store';
+import { addExpense, selectDailyTarget, setSummary, removeExpense } from '../../store/store';
 import { Ionicons } from '@expo/vector-icons';
 import { AnimatedCounter } from '../../components/AnimatedCounter';
 
@@ -72,11 +73,12 @@ export default function Expenses() {
   // State
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [amount, setAmount] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const bottomSheetAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   
   // Animated value for progress bar width
   const progressWidthAnim = useRef(new Animated.Value(0)).current;
+  // Animated value for keyboard offset
+  const keyboardOffsetAnim = useRef(new Animated.Value(0)).current;
 
   // Animate progress bar on mount
   useEffect(() => {
@@ -88,6 +90,30 @@ export default function Expenses() {
     }).start();
   }, [burnPercentage]);
 
+  // Keyboard handling
+  useEffect(() => {
+    const keyboardWillShow = Keyboard.addListener('keyboardWillShow', (event) => {
+      Animated.timing(keyboardOffsetAnim, {
+        toValue: event.endCoordinates.height,
+        duration: event.duration,
+        useNativeDriver: true,
+      }).start();
+    });
+
+    const keyboardWillHide = Keyboard.addListener('keyboardWillHide', (event) => {
+      Animated.timing(keyboardOffsetAnim, {
+        toValue: 0,
+        duration: event.duration,
+        useNativeDriver: true,
+      }).start();
+    });
+
+    return () => {
+      keyboardWillShow.remove();
+      keyboardWillHide.remove();
+    };
+  }, []);
+
   // Mutations
   const addExpenseMutation = useMutation({
     mutationFn: async (expenseData) => {
@@ -98,15 +124,36 @@ export default function Expenses() {
       if (!response.ok) throw new Error('Failed to add expense');
       return response.json();
     },
-    onSuccess: (data) => {
-      dispatch(addExpense(data));
-      queryClient.invalidateQueries(['expenses']);
-      queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
-      showToast('Expense logged!', 'success');
+    onMutate: async (newExpense) => {
+      // Optimistically add the expense to Redux immediately
+      const optimisticExpense = {
+        ...newExpense,
+        id: `temp-${Date.now()}`,
+        created_at: new Date().toISOString(),
+      };
+      dispatch(addExpense(optimisticExpense));
+      
+      // Update daily summary optimistically
+      const newExpensesTotal = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0) + parseFloat(newExpense.amount);
+      dispatch(setSummary({
+        ...{ expenses: newExpensesTotal, net_profit: 0 },
+      }));
+      
       closeBottomSheet();
+      showToast('Expense logged!', 'success');
+      
+      return { optimisticExpense };
     },
-    onError: () => {
-      showToast('Failed to log expense', 'error');
+    onSuccess: (data) => {
+      // Replace optimistic expense with actual backend response
+      queryClient.invalidateQueries({ queryKey: ['periodSummary'], exact: false });
+    },
+    onError: (error, newExpense, context) => {
+      // Rollback on error - remove the optimistic expense
+      if (context?.optimisticExpense) {
+        dispatch(removeExpense(context.optimisticExpense.id));
+      }
+      showToast('Failed to save expense', 'error');
     },
   });
 
@@ -115,7 +162,7 @@ export default function Expenses() {
     setSelectedCategory(category);
     setAmount('');
     Animated.spring(bottomSheetAnim, {
-      toValue: SCREEN_HEIGHT * 0.5,
+      toValue: 0,
       useNativeDriver: true,
     }).start();
   };
@@ -147,7 +194,6 @@ export default function Expenses() {
       return;
     }
 
-    setIsLoading(true);
     addExpenseMutation.mutate({
       amount: parseFloat(amount),
       category: selectedCategory.id.toUpperCase(),
@@ -354,12 +400,13 @@ export default function Expenses() {
       position: 'absolute',
       left: 0,
       right: 0,
-      height: SCREEN_HEIGHT * 0.5,
+      bottom: 0,
+      height: SCREEN_HEIGHT * 0.7,
       backgroundColor: colors.card,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
       padding: 20,
-      transform: [{ translateY: bottomSheetAnim }],
+      transform: [{ translateY: Animated.add(bottomSheetAnim, Animated.multiply(keyboardOffsetAnim, -1)) }],
     },
     dragHandle: {
       width: 40,
@@ -555,10 +602,10 @@ export default function Expenses() {
             <TouchableOpacity
               style={styles.confirmButton}
               onPress={handleSaveExpense}
-              disabled={!amount || isLoading}
+              disabled={!amount}
             >
               <Text style={styles.confirmButtonText}>
-                {isLoading ? 'Saving...' : 'Log Expense'}
+                Log Expense
               </Text>
             </TouchableOpacity>
           </Animated.View>

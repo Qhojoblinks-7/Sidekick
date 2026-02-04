@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useQueryClient } from "@tanstack/react-query";
-import { setSyncing, addTransaction as addTransactionAction, selectSummary, selectTransactions, selectDailyTarget, selectSmsEnabled, selectIsSyncing } from "../../store/store";
+import { setSyncing, addTransaction as addTransactionAction, selectSummary, selectTransactions, selectDailyTarget, selectIsSyncing } from "../../store/store";
 import { apiCall } from "../../services/apiService";
 import {
   ScrollView,
@@ -41,7 +41,6 @@ export default function Dashboard() {
   const summary = useSelector(selectSummary);
   const transactionsData = useSelector(selectTransactions);
   const dailyTarget = useSelector(selectDailyTarget);
-  const smsEnabled = useSelector(selectSmsEnabled);
   const isSyncing = useSelector(selectIsSyncing);
 
   const getInitialPeriod = () => {
@@ -348,7 +347,7 @@ export default function Dashboard() {
 
     return () => stopListening();
     */
-  }, [smsEnabled]);
+  });
   useEffect(() => {
     if (currentStep === 3) {
       console.log('[DEBUG] currentStep === 3, setting transactionDateModalVisible to true');
@@ -508,7 +507,7 @@ export default function Dashboard() {
     },
     platformText: {
       fontWeight: "bold",
-      color: '#FFFFFF',
+      color: colors.textMain,
     },
     selectedPlatformText: {
       color: '#FFFFFF',
@@ -516,10 +515,11 @@ export default function Dashboard() {
     modalButtons: {
       flexDirection: "row",
       justifyContent: "space-between",
+      marginTop: 16,
     },
     modalButton: {
       flex: 1,
-      paddingVertical: 12,
+      paddingVertical: 16,
       paddingHorizontal: 20,
       borderRadius: 12,
       alignItems: "center",
@@ -527,18 +527,18 @@ export default function Dashboard() {
     },
     cancelButton: {
       backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
+      borderWidth:1,
+      borderColor: colors.card,
     },
     saveButton: {
       backgroundColor: colors.profit,
     },
     cancelButtonText: {
-      color: '#FFFFFF',
+      color: colors.textMain,
       fontWeight: "bold",
     },
     saveButtonText: {
-      color: colors.textMain,
+      color: '#FFFFFF',
       fontWeight: "bold",
     },
     dateButton: {
@@ -602,7 +602,7 @@ export default function Dashboard() {
             style={styles.quickAddButton}
             onPress={() => setCurrentStep(1)}
           >
-            <Ionicons name="add" size={40} color={colors.textMain} />
+            <Ionicons name="add" size={40} color="#FFFFFF" />
           </TouchableOpacity>
 
           <View style={styles.activityHeader}>
@@ -671,17 +671,7 @@ export default function Dashboard() {
         </TouchableOpacity>
       ))}
     </View>
-    <View style={{ alignItems: 'center', marginTop: 20 }}>
-      <TouchableOpacity
-        style={[styles.modalButton, styles.cancelButton, { width: '50%' }]}
-        onPress={() => {
-          setCurrentStep(0);
-          resetTransactionStates();
-        }}
-      >
-        <Text style={styles.cancelButtonText}>Cancel</Text>
-      </TouchableOpacity>
-    </View>
+
   </>
 )}
 {currentStep === 2 && (

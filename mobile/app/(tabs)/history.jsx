@@ -441,7 +441,7 @@ export default function History() {
       backgroundColor: colors.profit,
     },
     cancelButtonText: {
-      color: '#FFFFFF',
+      color: colors.textMain,
       fontWeight: "bold",
     },
     saveButtonText: {
@@ -539,9 +539,6 @@ export default function History() {
       {/* Floating Action Bar for Bulk Actions */}
       {isSelectMode && selectedItems.length > 0 && (
         <View style={styles.floatingActionBar}>
-          <Text style={styles.selectedCount}>
-            {selectedItems.length} selected
-          </Text>
           <TouchableOpacity
             style={styles.bulkDeleteButton}
             onPress={handleBulkDelete}

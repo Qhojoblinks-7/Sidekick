@@ -2,7 +2,13 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Colors } from '../../constants/Colors';
 
-export const Button = ({ label, onPress, variant = 'primary', loading = false, disabled = false }) => {
+export const Button = ({ label, onPress, variant = 'primary', loading = false, disabled = false, textColor }) => {
+  const getTextColor = () => {
+    if (textColor) return textColor;
+    if (variant === 'secondary') return '#1A1F36'; // Black for white background
+    return '#FFFFFF';
+  };
+
   return (
     <TouchableOpacity
       onPress={loading || disabled ? undefined : onPress}
@@ -10,9 +16,9 @@ export const Button = ({ label, onPress, variant = 'primary', loading = false, d
       activeOpacity={0.8}
     >
       {loading ? (
-        <ActivityIndicator color={Colors.textMain} />
+        <ActivityIndicator color={getTextColor()} />
       ) : (
-        <Text style={styles.text}>
+        <Text style={[styles.text, { color: getTextColor() }]}>
           {label}
         </Text>
       )}

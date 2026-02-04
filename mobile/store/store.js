@@ -27,12 +27,10 @@ const settingsSlice = createSlice({
   initialState: {
     dailyTarget: 500.00,
     vehicleType: 'Bicycle',
-    smsEnabled: false,
   },
   reducers: {
     setDailyTarget: (state, action) => { state.dailyTarget = action.payload; },
     setVehicleType: (state, action) => { state.vehicleType = action.payload; },
-    setSmsEnabled: (state, action) => { state.smsEnabled = action.payload; },
     loadSettings: (state, action) => { Object.assign(state, action.payload); },
   },
 });
@@ -98,7 +96,7 @@ const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const { setOnline, setSyncing, setLastSyncTime } = uiSlice.actions;
 
-export const { setDailyTarget, setVehicleType, setSmsEnabled, loadSettings } = settingsSlice.actions;
+export const { setDailyTarget, setVehicleType, loadSettings } = settingsSlice.actions;
 export const {
   setSummary,
   setTransactions,
@@ -119,7 +117,6 @@ export const selectLastSyncTime = (state) => state.ui.lastSyncTime;
 
 export const selectDailyTarget = (state) => state.settings.dailyTarget;
 export const selectVehicleType = (state) => state.settings.vehicleType;
-export const selectSmsEnabled = (state) => state.settings.smsEnabled;
 
 export const selectSummary = (state) => state.data.summary;
 export const selectTransactions = (state) => state.data.transactions;

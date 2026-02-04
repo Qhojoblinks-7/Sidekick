@@ -53,7 +53,7 @@ export const useAddTransaction = () => {
     onSuccess: async (result) => {
       dispatch(addTransaction(result));
       await updateSummary(dispatch);
-      queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['periodSummary'], exact: false });
     },
     onError: async (error) => {
       if (error instanceof SessionExpiredError) {
@@ -88,7 +88,7 @@ export const useUpdateTransaction = () => {
     },
     onSuccess: async () => {
       await updateSummary(dispatch);
-      queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['periodSummary'], exact: false });
     },
     onError: async (error) => {
       if (error instanceof SessionExpiredError) {
@@ -134,7 +134,7 @@ export const useAddExpense = () => {
         };
         dispatch(setSummary(updatedSummary));
       }
-      queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['periodSummary'], exact: false });
     },
     onError: async (error) => {
       if (error instanceof SessionExpiredError) {
@@ -169,7 +169,7 @@ export const useUpdateExpense = () => {
     },
     onSuccess: async () => {
       await updateSummary(dispatch);
-      queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['periodSummary'], exact: false });
     },
     onError: async (error) => {
       if (error instanceof SessionExpiredError) {
@@ -204,7 +204,7 @@ export const useDeleteExpense = () => {
     onSuccess: async (result, id) => {
       dispatch(removeExpense(id));
       await updateSummary(dispatch);
-      queryClient.invalidateQueries({ queryKey: ['periodSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['periodSummary'], exact: false });
     },
     onError: async (error) => {
       if (error instanceof SessionExpiredError) {

@@ -63,7 +63,7 @@ export const FilterHub = ({
       borderColor: colors.profit,
     },
     selectButtonText: {
-      color: '#FFFFFF',
+      color: colors.textMain,
       fontWeight: 'bold',
       fontSize: 12,
     },
@@ -139,7 +139,7 @@ export const FilterHub = ({
     selectActionText: {
       fontSize: 11,
       fontWeight: '600',
-      color: '#FFFFFF',
+      color: colors.textMain,
     },
   });
 
