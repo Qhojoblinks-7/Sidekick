@@ -49,7 +49,7 @@ const refreshAccessToken = async () => {
     }
 
     console.log('[TOKEN] Attempting token refresh...');
-    const response = await fetch(`${API_URL}/api/refresh/`, {
+    const response = await fetch(`${API_URL}/api/auth/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh: refreshToken }),
